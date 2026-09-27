@@ -5,7 +5,7 @@ class CoachPrebookingsController < ApplicationController
 
   def create
     booking = @game.coach_prebookings.create!(coach: current_user, date: params[:date])
-    redirect_back fallback_location: game_path(@game), notice: t("games.prebookings.coach_booked")
+    redirect_to_prebooking_month @game, booking.date, notice: t("games.prebookings.coach_booked")
   rescue ActiveRecord::RecordInvalid => error
     redirect_back fallback_location: game_path(@game), alert: error.record.errors.full_messages.to_sentence
   end
@@ -13,8 +13,8 @@ class CoachPrebookingsController < ApplicationController
   def destroy
     # Тренеров у тренировки двое, и чужой id брони приходит тем же маршрутом —
     # поэтому отменить можно только собственное подтверждение.
-    @game.coach_prebookings.where(coach: current_user).find(params[:id]).destroy!
-    redirect_back fallback_location: game_path(@game), notice: t("games.prebookings.coach_cancelled")
+    booking = @game.coach_prebookings.where(coach: current_user).find(params[:id]).destroy!
+    redirect_to_prebooking_month @game, booking.date, notice: t("games.prebookings.coach_cancelled")
   end
 
   private

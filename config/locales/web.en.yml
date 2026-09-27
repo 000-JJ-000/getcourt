@@ -262,7 +262,7 @@ en:
         many: "%{count} errors prohibited this game from being saved:"
         other: "%{count} errors prohibited this game from being saved:"
       repeat: Repeating the schedule
-      repeat_hint: "The sessions themselves are ticked in the calendar above — as many days as you need. These boxes continue the schedule after the last ticked date; without them the series ends there."
+      repeat_hint: "Game dates are ticked in the calendar above. Leave both boxes below unticked and games happen only on those dates."
       recurring: Repeat weekly
       recurring_hint: "After the last ticked date the game carries on every week on the same weekdays."
       recurring_monthly: Repeat monthly
@@ -371,6 +371,7 @@ en:
       cancel_date: Cancel date
       cancel_date_confirm: Cancel all bookings for %{date}?
       cancelled: Cancelled — bookings disabled for this date
+      first_session_closed: "No prebooking for the first session: players join the lineup with the join button above."
       pending: Pending
       cancel: Cancel
       book: Book

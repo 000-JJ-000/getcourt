@@ -274,7 +274,7 @@
     <% end %>
 
     <% if @game.prebooking_enabled? || (@game.series? && @game.coach_accepted?) %>
-      <%= render "prebookings", game: @game %>
+      <%= render "prebookings", game: @game, month: params[:month] %>
     <% end %>
 
     <% can_fill_stats = false %>
