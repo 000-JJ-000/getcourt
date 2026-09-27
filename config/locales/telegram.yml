@@ -78,7 +78,7 @@ ru:
     game_or_user_not_found: Игра или пользователь не найдены
     joined_game: Вы присоединились к игре
     chat_started: "Теперь вы пишете в чат игры %{game}. Кроме вас, сообщения увидят участники, подключённые к Telegram (%{count})."
-    chat_lifetime: "Чат живёт столько же, сколько состав: до субботы, 4:00."
+    chat_lifetime: "Чат живёт столько же, сколько состав: до %{until}."
     chat_switch_btn: "Сменить игру"
     chat_exit_btn: "Выйти из чата"
     chat_stopped: "Вышли из чата. Сообщения боту снова видите только вы. Вернуться — командой /chat."
@@ -691,7 +691,7 @@ en:
     game_or_user_not_found: Game or user not found
     joined_game: You joined the game
     chat_started: "You are now writing to game %{game}. Besides you, players connected to Telegram will see your messages (%{count})."
-    chat_lifetime: "The chat lives as long as the squad does: until Saturday, 4:00."
+    chat_lifetime: "The chat lives as long as the squad does: until %{until}."
     chat_switch_btn: "Switch game"
     chat_exit_btn: "Leave chat"
     chat_stopped: "Left the chat. Messages to the bot are private again. Send /chat to come back."
@@ -1261,7 +1261,7 @@ es:
     game_or_user_not_found: Partido o usuario no encontrado
     joined_game: Te has unido al partido
     chat_started: "Ahora escribes al partido %{game}. Además de ti, lo verán los jugadores conectados a Telegram (%{count})."
-    chat_lifetime: "El chat vive lo mismo que la alineación: hasta el sábado a las 4:00."
+    chat_lifetime: "El chat vive lo mismo que la alineación: hasta el %{until}."
     chat_switch_btn: "Cambiar de partido"
     chat_exit_btn: "Salir del chat"
     chat_stopped: "Has salido del chat. Tus mensajes al bot vuelven a ser privados. Escribe /chat para volver."
