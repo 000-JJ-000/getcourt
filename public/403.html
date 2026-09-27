@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <title>Something went wrong (500) · GetCourt</title>
+  <title>Access denied (403) · GetCourt</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
@@ -44,9 +44,9 @@
   </a>
 
   <main class="card">
-    <span class="code"><b class="gradient">500</b></span>
-    <h1 data-i18n="title">Something went wrong</h1>
-    <p data-i18n="text">The error is on our side. Please refresh the page in a minute.</p>
+    <span class="code"><b class="gradient">403</b></span>
+    <h1 data-i18n="title">Access denied</h1>
+    <p data-i18n="text">You don't have permission to open this page. Maybe you're signed in with a different account?</p>
     <div class="actions">
       <a class="btn btn-primary" href="/" data-i18n="home">Go to games</a>
       <button class="btn btn-ghost" type="button" data-back hidden data-i18n="back">Back</button>
@@ -56,15 +56,15 @@
   <script>
     (function () {
       var t = {
-        ru: { title: "Что-то пошло не так", text: "Ошибка на нашей стороне. Обновите страницу через минуту.", home: "К играм", back: "Назад" },
-        es: { title: "Algo salió mal", text: "El error es nuestro. Actualiza la página en un minuto.", home: "Ir a los partidos", back: "Atrás" }
+        ru: { title: "Нет доступа", text: "У вас нет прав на эту страницу. Возможно, вы вошли под другим аккаунтом?", home: "К играм", back: "Назад" },
+        es: { title: "Acceso denegado", text: "No tienes permiso para abrir esta página. ¿Quizás has iniciado sesión con otra cuenta?", home: "Ir a los partidos", back: "Atrás" }
       };
       document.querySelectorAll("[data-back]").forEach(function (b) { if (history.length > 1) { b.hidden = false; b.onclick = function () { history.back(); }; } });
       try { var theme = localStorage.getItem("getcourt_theme"); if (theme) document.documentElement.classList.add(theme === "dark" ? "dark" : "light"); } catch (e) {}
       var lang = location.hostname.split(".")[0];
       if (!t[lang]) return;
       document.documentElement.lang = lang;
-      document.title = t[lang].title + " (500) · GetCourt";
+      document.title = t[lang].title + " (403) · GetCourt";
       document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t[lang][el.getAttribute("data-i18n")]; });
     })();
   </script>

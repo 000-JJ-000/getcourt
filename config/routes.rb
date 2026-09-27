@@ -134,6 +134,7 @@ Rails.application.routes.draw do
     resources :participations, only: [ :create, :destroy ] do
       collection do
         post :create_guest
+        post :add_user
       end
 
       member do

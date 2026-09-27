@@ -191,7 +191,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
         post assign_game_prebooking_url(game, slot), params: { user_id: player.id }
       end
 
-      assert_redirected_to game_path(game)
+      assert_redirected_to game_path(game, month: slot.date.strftime("%Y-%m"))
       slot.reload
       assert_equal player, slot.user
       assert slot.approved?

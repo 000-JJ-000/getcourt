@@ -147,7 +147,7 @@ class GamesController < ApplicationController
   def prepare_prebooking_slots
     return unless user_signed_in? && @game.prebooking_enabled?
 
-    month = @game.prebooking_month
+    month = @game.prebooking_month(params[:month])
     @game.ensure_prebookings_for_dates(@game.prebooking_dates_in(month)) if month
   end
 

@@ -14,6 +14,13 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # Действия в календаре предзаписи возвращают на месяц той даты, с которой
+  # работали: иначе после каждой брони календарь прыгал на месяц по умолчанию,
+  # и записаться на несколько дат следующего месяца было мукой.
+  def redirect_to_prebooking_month(game, date, **options)
+    redirect_to game_path(game, month: date&.to_date&.strftime("%Y-%m")), **options
+  end
+
   def set_locale_from_subdomain
     locale = request.subdomains.first
     I18n.locale = I18n.available_locales.map(&:to_s).include?(locale) ? locale : I18n.default_locale

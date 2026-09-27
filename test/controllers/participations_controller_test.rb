@@ -42,6 +42,51 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Guest name can't be blank.", flash[:alert]
   end
 
+  test "owner adds a registered user to the lineup and the user is notified" do
+    post session_url, params: { email: "add_user_owner@example.com" }
+    owner = User.find_by!(email: "add_user_owner@example.com")
+    game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
+    player = User.create!(email: "add_user_player@example.com")
+
+    assert_enqueued_emails 1 do
+      assert_difference("Participation.count", 1) do
+        post add_user_game_participations_url(game), params: { user_id: player.id }
+      end
+    end
+
+    assert_redirected_to game_path(game)
+    participation = game.participations.find_by!(user: player)
+    assert participation.approved?
+  end
+
+  test "adding a user who is already in the lineup redirects with alert" do
+    post session_url, params: { email: "add_user_dup_owner@example.com" }
+    owner = User.find_by!(email: "add_user_dup_owner@example.com")
+    game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
+    player = User.create!(email: "add_user_dup_player@example.com", name: "Dup Player")
+    Participation.create!(game: game, user: player, status: "approved")
+
+    assert_no_difference("Participation.count") do
+      post add_user_game_participations_url(game), params: { user_id: player.id }
+    end
+
+    assert_redirected_to game_path(game)
+    assert_match "Dup Player", flash[:alert]
+  end
+
+  test "non owner cannot add a user to the lineup" do
+    owner = User.create!(email: "add_user_other_owner@example.com")
+    game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
+    player = User.create!(email: "add_user_other_player@example.com")
+    post session_url, params: { email: "add_user_stranger@example.com" }
+
+    assert_no_difference("Participation.count") do
+      post add_user_game_participations_url(game), params: { user_id: player.id }
+    end
+
+    assert_response :forbidden
+  end
+
   test "owner removes guest participation" do
     post session_url, params: { email: "guest_destroy_owner@example.com" }
     owner = User.find_by!(email: "guest_destroy_owner@example.com")

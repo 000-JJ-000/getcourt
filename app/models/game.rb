@@ -683,11 +683,15 @@ class Game < ApplicationRecord
   # По умолчанию открываем первый месяц, где есть куда записаться: в конце месяца
   # оставшиеся занятия уже закрыты сбросом состава, и календарь открывался пустым.
   # Отменённые даты календарь показывает, но записаться на них нельзя — их не считаем.
+  # Как и первое занятие, оставленное ради тренера: игроку в таком месяце делать
+  # нечего. Календарю одного тренера оно по-прежнему нужно.
   def first_prebooking_month_with_dates(range)
     cancelled = prebooking_cancellations.where(date: range.first..range.last.end_of_month).pluck(:date).map(&:to_date)
     month = range.first
     while month <= range.last
-      return month if (prebooking_dates_in(month) - cancelled).any?
+      dates = prebooking_dates_in(month) - cancelled
+      dates = dates.reject { |d| prebooking_closed_on?(d) } if prebooking_enabled?
+      return month if dates.any?
 
       month = month.next_month
     end
@@ -706,15 +710,35 @@ class Game < ApplicationRecord
     booked_dates = prebookings.where.not(user_id: nil).where(date: from..to).distinct.pluck(:date)
     cancelled_dates = prebooking_cancellations.where(date: from..to).distinct.pluck(:date)
     coach_dates = coach_prebookings.where(date: from..to).distinct.pluck(:date)
+    # Первое занятие закрыто только для игроков: тренеру карточка нужна, чтобы
+    # подтвердить дату или снять подтверждение.
+    coach_calendar = coach_accepted?
 
     (occurrences_between(from, to) + booked_dates + cancelled_dates + coach_dates).map(&:to_date).uniq.sort
-      .reject { |d| prebooking_closed_on?(d) && !cancelled_dates.include?(d) }
+      .reject do |d|
+        next false if cancelled_dates.include?(d)
+
+        participations_reset_reached?(d) || (prebooking_closed_on?(d) && !coach_calendar)
+      end
   end
 
   # Сброс на дату прошёл — её состав уже собран из предзаписи, и новая бронь
   # на неё в состав не попадёт: ResetParticipationsJob эту дату больше не
   # трогает. Записываются на такое занятие через состав, а не через предзапись.
+  # Пока сброса не было, то же верно для первого занятия серии: перед ним нет
+  # отыгранного, задача сброса до него не доходит, и состав собирают кнопкой
+  # «Присоединиться».
   def prebooking_closed_on?(date)
+    return true if participations_reset_reached?(date)
+    return false unless series? && last_participations_reset_at.nil?
+
+    first = occurrence_cycle.roster_occurrence
+    first.present? && first.to_date >= date.to_date
+  end
+
+  # Сброс на эту дату уже прошёл: занятие целиком позади для календаря — ни
+  # игрокам, ни тренеру на нём делать нечего.
+  def participations_reset_reached?(date)
     marker = last_participations_reset_at
     marker.present? && marker.to_date >= date.to_date
   end

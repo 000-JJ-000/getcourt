@@ -20,7 +20,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert_redirected_to game_path(game)
+    assert_redirected_to game_path(game, month: game.next_date.strftime("%Y-%m"))
   ensure
     coach&.destroy
   end
@@ -52,6 +52,34 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
     second&.destroy
   end
 
+  # Первое занятие серии закрыто для записи игроков, но тренеру его карточка
+  # нужна: подтверждение на эту дату надо видеть и уметь снять.
+  test "the first session keeps its card for the coach while player prebooking is closed" do
+    coach = User.create!(email: "first-session-coach@example.com", coach: true)
+
+    travel_to Time.zone.local(2026, 9, 12, 12, 0) do
+      game = Game.create!(court: courts(:one), user: users(:one), kind: "training", with_coach: true, coach: coach,
+                          recurring: true, prebooking_enabled: true, players_count: 2, date: Date.new(2026, 9, 15))
+      game.update!(coach_invitation_status: "accepted")
+      game.coach_prebookings.create!(coach: coach, date: Date.new(2026, 9, 15))
+
+      assert game.prebooking_closed_on?(Date.new(2026, 9, 15))
+      assert_equal [ Date.new(2026, 9, 15), Date.new(2026, 9, 22), Date.new(2026, 9, 29) ], game.prebooking_dates_in(Date.new(2026, 9, 1))
+
+      post session_url, params: { email: coach.email }
+      get game_path(game)
+
+      assert_select "article#prebooking-2026-09-15" do
+        assert_select "[data-testid=prebooking-first-session]"
+        assert_select "button", text: I18n.t("games.prebookings.coach_cancel")
+        assert_select "button", text: I18n.t("games.prebookings.book"), count: 0
+      end
+      assert_select "article#prebooking-2026-09-22 button", text: I18n.t("games.prebookings.coach_cancel"), count: 0
+    end
+  ensure
+    coach&.destroy
+  end
+
   test "a coach cancels their own confirmation" do
     coach = User.create!(email: "booking-cancelling-coach@example.com", coach: true)
     game = Game.create!(
@@ -71,7 +99,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
       delete game_coach_prebooking_url(game, booking)
     end
 
-    assert_redirected_to game_path(game)
+    assert_redirected_to game_path(game, month: booking.date.strftime("%Y-%m"))
   ensure
     coach&.destroy
   end

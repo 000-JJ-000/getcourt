@@ -15,12 +15,12 @@ class PrebookingsController < ApplicationController
     return head :forbidden unless can_participate?(@game, @prebooking.date)
 
     if @prebooking.user_id.present?
-      redirect_back fallback_location: game_path(@game), alert: "Slot already taken."
+      redirect_to_prebooking_month @game, @prebooking.date, alert: "Slot already taken."
       return
     end
 
     if @game.prebookings.where(user_id: current_user.id, date: @prebooking.date).exists?
-      redirect_back fallback_location: game_path(@game), alert: "You already have a booking for this game on that date."
+      redirect_to_prebooking_month @game, @prebooking.date, alert: "You already have a booking for this game on that date."
       return
     end
 
@@ -31,9 +31,9 @@ class PrebookingsController < ApplicationController
 
     if status == "pending"
       schedule_owner_notification(@game, current_user)
-      redirect_back fallback_location: game_path(@game), notice: "Booking request sent. Waiting for approval."
+      redirect_to_prebooking_month @game, @prebooking.date, notice: "Booking request sent. Waiting for approval."
     else
-      redirect_back fallback_location: game_path(@game), notice: "You booked a slot."
+      redirect_to_prebooking_month @game, @prebooking.date, notice: "You booked a slot."
     end
   end
 
@@ -45,31 +45,31 @@ class PrebookingsController < ApplicationController
 
     user = User.not_merged.find_by(id: params[:user_id])
     if user.nil?
-      redirect_back fallback_location: game_path(@game), alert: t("games.prebookings.assign_no_user")
+      redirect_to_prebooking_month @game, @prebooking.date, alert: t("games.prebookings.assign_no_user")
       return
     end
 
     return head :forbidden unless can_participate?(@game, @prebooking.date)
 
     if @prebooking.user_id.present?
-      redirect_back fallback_location: game_path(@game), alert: "Slot already taken."
+      redirect_to_prebooking_month @game, @prebooking.date, alert: "Slot already taken."
       return
     end
 
     if @game.prebookings.where(user_id: user.id, date: @prebooking.date).exists?
-      redirect_back fallback_location: game_path(@game), alert: t("games.prebookings.assign_already_booked", name: helpers.user_display_label(user))
+      redirect_to_prebooking_month @game, @prebooking.date, alert: t("games.prebookings.assign_already_booked", name: helpers.user_display_label(user))
       return
     end
 
     @prebooking.update!(user: user, status: "approved", approved_at: Time.current)
     GameRequestNotification.prebooking_assigned(user: user, game: @game, date: @prebooking.date) unless user == current_user
-    redirect_back fallback_location: game_path(@game), notice: t("games.prebookings.assigned", name: helpers.user_display_label(user))
+    redirect_to_prebooking_month @game, @prebooking.date, notice: t("games.prebookings.assigned", name: helpers.user_display_label(user))
   end
 
   def cancel
     if @prebooking.user == current_user || can_manage_game?
       @prebooking.update!(user: nil, status: "approved", approved_at: nil)
-      redirect_back fallback_location: game_path(@game), notice: "Booking cleared."
+      redirect_to_prebooking_month @game, @prebooking.date, notice: "Booking cleared."
     else
       head :forbidden
     end
@@ -83,7 +83,7 @@ class PrebookingsController < ApplicationController
 
     @prebooking.update!(status: "approved", approved_at: Time.current)
     GameRequestNotification.prebooking(user: @prebooking.user, game: @game, dates: @prebooking.date, approved: true)
-    redirect_back fallback_location: game_path(@game), notice: "Prebooking approved."
+    redirect_to_prebooking_month @game, @prebooking.date, notice: "Prebooking approved."
   end
 
   def reject
@@ -93,7 +93,7 @@ class PrebookingsController < ApplicationController
     date = @prebooking.date
     @prebooking.update!(user: nil, status: "approved", approved_at: nil)
     GameRequestNotification.prebooking(user: requester, game: @game, dates: date, approved: false)
-    redirect_back fallback_location: game_path(@game), notice: "Prebooking rejected."
+    redirect_to_prebooking_month @game, date, notice: "Prebooking rejected."
   end
 
   private

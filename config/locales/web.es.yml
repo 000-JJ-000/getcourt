@@ -263,7 +263,7 @@ es:
         many: "%{count} errores impidieron guardar el partido:"
         other: "%{count} errores impidieron guardar el partido:"
       repeat: Repetición del calendario
-      repeat_hint: "Las sesiones se marcan en el calendario de arriba, tantas como haga falta. Estas casillas continúan el calendario después de la última fecha marcada; sin ellas la serie termina ahí."
+      repeat_hint: "Las fechas de los partidos se marcan en el calendario de arriba. Si no marcas ninguna casilla, solo se jugará en esas fechas."
       recurring: Repetir cada semana
       recurring_hint: "Tras la última fecha marcada el partido sigue cada semana en los mismos días de la semana."
       recurring_monthly: Repetir cada mes
@@ -375,6 +375,7 @@ es:
       cancel_date: Cancelar fecha
       cancel_date_confirm: "¿Cancelar todas las reservas del %{date}?"
       cancelled: Cancelado — reservas deshabilitadas para esta fecha
+      first_session_closed: "La primera sesión no admite prerreserva: se entra en la alineación con el botón para unirse de arriba."
       pending: Pendiente
       cancel: Cancelar
       book: Reservar

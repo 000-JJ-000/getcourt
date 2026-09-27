@@ -214,6 +214,40 @@ class GameTest < ActiveSupport::TestCase
     end
   end
 
+  # Перед первым занятием отыгранного нет, сброс до него не дойдёт, и бронь на
+  # него в состав не попала бы никогда: состав собирают кнопкой «Присоединиться».
+  # Первое занятие в конце месяца остаётся в календаре ради тренера, но игрокам
+  # в этом месяце записываться некуда — открываем следующий. Календарю одного
+  # тренера первое занятие нужно, и месяц остаётся его.
+  test "a month with only the coach's first session is not the default for players" do
+    coach = User.create!(email: "first-session-month-coach@example.com", coach: true)
+
+    travel_to Time.zone.local(2026, 9, 12, 12, 0) do
+      game = Game.create!(court: courts(:one), user: users(:one), kind: "training", with_coach: true, coach: coach,
+                          recurring: true, prebooking_enabled: true, players_count: 2, date: Date.new(2026, 9, 29))
+      game.update!(coach_invitation_status: "accepted")
+
+      assert_equal [ Date.new(2026, 9, 29) ], game.prebooking_dates_in(Date.new(2026, 9, 1))
+      assert_equal Date.new(2026, 10, 1), game.prebooking_month
+
+      game.update!(prebooking_enabled: false)
+      assert_equal Date.new(2026, 9, 1), game.prebooking_month
+    end
+  ensure
+    coach&.destroy
+  end
+
+  test "the first session of a series is closed for prebooking" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 15), recurring: true, prebooking_enabled: true)
+
+    travel_to Time.zone.local(2026, 9, 12, 12, 0) do
+      assert game.prebooking_closed_on?(Date.new(2026, 9, 15))
+      assert_not game.prebooking_closed_on?(Date.new(2026, 9, 22))
+      assert_equal [ Date.new(2026, 9, 22), Date.new(2026, 9, 29) ], game.prebooking_dates_in(Date.new(2026, 9, 1))
+      assert_equal Date.new(2026, 9, 22), game.prebooking_horizon_dates(3).first
+    end
+  end
+
   # Отменили всё, что оставалось, — календарь всё равно нужен: вернуть дату
   # можно только из него.
   test "a series with every remaining session cancelled keeps its calendar" do
@@ -602,7 +636,7 @@ class GameTest < ActiveSupport::TestCase
                         recurring: true, recurrence_days: [ 1, 4 ], prebooking_enabled: true, kind: "game")
 
     travel_to Time.zone.local(2026, 9, 7, 9, 0) do
-      assert_equal [ Date.new(2026, 9, 7), Date.new(2026, 9, 10), Date.new(2026, 9, 14), Date.new(2026, 9, 17) ],
+      assert_equal [ Date.new(2026, 9, 10), Date.new(2026, 9, 14), Date.new(2026, 9, 17), Date.new(2026, 9, 21) ],
                    game.prebooking_horizon_dates(4)
     end
   ensure

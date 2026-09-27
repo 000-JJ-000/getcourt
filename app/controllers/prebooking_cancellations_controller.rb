@@ -13,16 +13,16 @@ class PrebookingCancellationsController < ApplicationController
     c.cancelled_at ||= Time.current
 
     if c.save
-      redirect_back fallback_location: game_path(@game), notice: "Date cancelled."
+      redirect_to_prebooking_month @game, date, notice: "Date cancelled."
     else
-      redirect_back fallback_location: game_path(@game), alert: c.errors.full_messages.join(", ")
+      redirect_to_prebooking_month @game, date, alert: c.errors.full_messages.join(", ")
     end
   end
 
   def destroy
     return head :forbidden unless current_user.admin? || @game.user == current_user
     @cancellation.destroy
-    redirect_back fallback_location: game_path(@game), notice: "Date restored."
+    redirect_to_prebooking_month @game, @cancellation.date, notice: "Date restored."
   end
 
   private
