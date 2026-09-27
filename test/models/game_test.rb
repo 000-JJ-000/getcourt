@@ -229,6 +229,36 @@ class GameTest < ActiveSupport::TestCase
     end
   end
 
+  # В конце месяца оставшееся занятие уже закрыто сбросом состава — открываем
+  # сразу следующий месяц, а не пустой текущий. Пролистать назад по-прежнему можно.
+  test "the calendar opens on the first month with something to book" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 1), recurring: true,
+                        prebooking_enabled: true)
+
+    travel_to Time.zone.local(2026, 9, 27, 12, 0) do
+      game.mark_participations_reset!(Date.new(2026, 9, 29))
+
+      assert_empty game.prebooking_dates_in(Date.new(2026, 9, 1))
+      assert_equal Date.new(2026, 10, 1), game.prebooking_month
+      assert_equal Date.new(2026, 9, 1), game.prebooking_month("2026-09")
+    end
+  end
+
+  # Отменённое занятие в календаре видно — его можно вернуть, — но записаться на
+  # него нельзя, поэтому месяц, где есть только оно, по умолчанию не открываем.
+  test "a month with only a cancelled session is not opened by default" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 1), recurring: true,
+                        prebooking_enabled: true)
+
+    travel_to Time.zone.local(2026, 9, 27, 12, 0) do
+      game.prebooking_cancellations.create!(date: Date.new(2026, 9, 29), user: users(:one))
+
+      assert_equal [ Date.new(2026, 9, 29) ], game.prebooking_dates_in(Date.new(2026, 9, 1))
+      assert_equal Date.new(2026, 10, 1), game.prebooking_month
+      assert_equal Date.new(2026, 9, 1), game.prebooking_month("2026-09")
+    end
+  end
+
   # Листать можно от месяца ближайшего занятия на год вперёд, у конечной серии
   # — до месяца последней даты; просьба показать что-то за границей возвращает
   # ближайший допустимый месяц.

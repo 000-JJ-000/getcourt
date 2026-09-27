@@ -675,7 +675,22 @@ class Game < ApplicationRecord
     return nil unless range
 
     month = (Date.strptime(requested.to_s, "%Y-%m") rescue nil)
-    month ? month.beginning_of_month.clamp(range.first, range.last) : range.first
+    return month.beginning_of_month.clamp(range.first, range.last) if month
+
+    first_prebooking_month_with_dates(range) || range.first
+  end
+
+  # По умолчанию открываем первый месяц, где есть куда записаться: в конце месяца
+  # оставшиеся занятия уже закрыты сбросом состава, и календарь открывался пустым.
+  # Отменённые даты календарь показывает, но записаться на них нельзя — их не считаем.
+  def first_prebooking_month_with_dates(range)
+    cancelled = prebooking_cancellations.where(date: range.first..range.last.end_of_month).pluck(:date).map(&:to_date)
+    month = range.first
+    while month <= range.last
+      return month if (prebooking_dates_in(month) - cancelled).any?
+
+      month = month.next_month
+    end
   end
 
   # Даты предзаписи внутри месяца: занятия начиная с сегодняшнего дня — прошлые
