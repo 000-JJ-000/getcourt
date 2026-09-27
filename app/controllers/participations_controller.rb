@@ -1,6 +1,6 @@
 class ParticipationsController < ApplicationController
-  before_action :set_game, only: [ :create, :create_guest, :destroy, :approve, :reject ]
-  before_action :authenticate_user!, only: [ :create_guest, :destroy, :approve, :reject ]
+  before_action :set_game, only: [ :create, :create_guest, :add_user, :destroy, :approve, :reject ]
+  before_action :authenticate_user!, only: [ :create_guest, :add_user, :destroy, :approve, :reject ]
 
   def create
     unless current_user
@@ -107,6 +107,42 @@ class ParticipationsController < ApplicationController
         format.turbo_stream { render plain: msg, status: :unprocessable_entity }
         format.html { redirect_to @game, alert: msg }
       end
+    end
+  end
+
+  # Организатор ставит в состав зарегистрированного игрока сам — как гостя, но
+  # с аккаунтом: человек получает уведомление и видит игру у себя.
+  def add_user
+    return head :forbidden unless can_manage_game?
+
+    user = User.not_merged.find_by(id: params[:user_id])
+    msg =
+      if user.nil?
+        t("games.show.add_user_not_found")
+      elsif @game.participations.exists?(user: user)
+        t("games.show.add_user_already", name: helpers.user_display_label(user))
+      end
+
+    unless msg
+      @participation = @game.participations.build(user: user, status: "approved", approved_at: Time.current)
+      msg = @participation.errors.full_messages.to_sentence.presence || "Failed to add player." unless @participation.save
+    end
+
+    # Редиректом, а не текстом: Turbo покажет флеш, и организатор увидит, почему
+    # человек не добавился.
+    return redirect_to(@game, alert: msg, status: :see_other) if msg
+
+    GameRequestNotification.participation_added(user: user, game: @game) unless user == current_user
+    ParticipationNotifier.notify_owner(@game, user, action: :guest_added) if current_user != @game.user
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace("participations", partial: "participations/list", locals: { game: @game }),
+          turbo_stream.replace("participation_controls", partial: "participations/controls", locals: { game: @game })
+        ]
+      end
+      format.html { redirect_to @game, notice: t("games.show.add_user_done", name: helpers.user_display_label(user)) }
     end
   end
 

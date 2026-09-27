@@ -28,6 +28,20 @@ class UserPickerTest < ApplicationSystemTestCase
     assert_equal @player, game.prebookings.order(:date, :slot_index).first.reload.user
   end
 
+  test "organizer adds a registered user to the lineup by typing a name" do
+    game = Game.create!(court: courts(:one), user: @owner, date: Date.tomorrow, time: "10:00")
+    sign_in @owner
+
+    visit game_path(game)
+    within("[data-testid=participation-add-user]") do
+      find("[data-testid=user-picker] input[type=text]").fill_in with: "ири"
+      find("[role=option]", text: "Ирина Подсказка").click
+    end
+
+    assert_selector "#participations li", text: "Ирина Подсказка", wait: 5
+    assert game.participations.approved.exists?(user: @player)
+  end
+
   # Между правкой текста и ответом сервера проходит 200 мс, и прежние подсказки
   # в это время не должны отвечать на Enter — иначе форма ушла бы не с тем.
   test "enter right after retyping does not pick a suggestion for the old text" do

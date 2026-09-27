@@ -27,6 +27,12 @@ class GameRequestNotification
     deliver(user, game, :prebooking_assigned_user, "prebooking_assigned", dates: [ date ])
   end
 
+  def self.participation_added(user:, game:)
+    return unless user
+
+    deliver(user, game, :participation_added_user, "participation_added")
+  end
+
   def self.deliver(user, game, text_key, subject_key, dates: nil)
     game_url = Rails.application.routes.url_helpers.game_url(game, host: app_host)
     notification = NotificationDelivery::Notification.new(

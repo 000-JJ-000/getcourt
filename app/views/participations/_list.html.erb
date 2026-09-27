@@ -38,15 +38,23 @@
   <% end %>
 
   <% if can_manage %>
+    <%= form_with url: add_user_game_participations_path(g), method: :post,
+          data: { turbo: true, testid: "participation-add-user" }, class: "mb-1" do %>
+      <%= render "shared/user_picker", field_name: "user_id", submit: true,
+                 placeholder: t("games.show.add_user_placeholder"), aria_label: t("games.show.add_user") %>
+    <% end %>
+    <p class="mb-3 text-xs text-gray-500 dark:text-slate-400"><%= t("games.show.add_user_hint") %></p>
+
     <%= form_with url: create_guest_game_participations_path(g), method: :post,
-          data: { turbo: true }, class: "mb-4 flex items-center gap-2" do %>
+          data: { turbo: true }, class: "mb-1 flex items-center gap-2" do %>
       <%= text_field_tag :guest_name, nil, maxlength: 50,
             required: true,
             placeholder: t("games.show.guest_placeholder"),
-            class: "w-full rounded border-gray-300 text-sm dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+            class: "w-full rounded border-gray-300 px-3 py-2 text-sm dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
       <%= submit_tag t("games.show.add_guest"),
-            class: "inline-flex items-center rounded-md border border-indigo-300 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 dark:border-white/15 dark:text-slate-100 dark:hover:bg-slate-700/60" %>
+            class: "inline-flex shrink-0 items-center rounded-md border border-indigo-300 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50 dark:border-white/15 dark:text-slate-100 dark:hover:bg-slate-700/60" %>
     <% end %>
+    <p class="mb-4 text-xs text-gray-500 dark:text-slate-400"><%= t("games.show.add_guest_hint") %></p>
   <% end %>
 
   <% if approved_participations.count > 4 %>
