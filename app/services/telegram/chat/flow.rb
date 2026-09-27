@@ -115,8 +115,8 @@ module Telegram
           label = Message.game_label(game, locale: Telegram::I18n.locale_for(user))
           text = [
             t(user, :chat_started, game: label, count: recipients),
-            t(user, :chat_lifetime)
-          ].join("\n")
+            lifetime_hint(game, Telegram::I18n.locale_for(user))
+          ].compact.join("\n")
           Telegram::Api.send_with_buttons(chat_id, text, controls(user), parse_mode: nil)
         end
 
@@ -128,6 +128,18 @@ module Telegram
             { text: t(user, :chat_switch_btn), callback_data: "chat:pick" },
             { text: t(user, :chat_exit_btn), callback_data: "chat:exit" }
           ] ]
+        end
+
+        # До какого момента живёт чат: до смены состава, а она у каждой игры
+        # своя — по её расписанию и в её часовом поясе. Раньше строка обещала
+        # «субботу, 4:00» от старого ночного крона и врала почти всем играм.
+        def lifetime_hint(game, locale)
+          closes_at = game&.chat_open_until
+          return nil unless closes_at
+
+          closes_at = closes_at.in_time_zone(game.creator_time_zone)
+          moment = "#{::I18n.l(closes_at.to_date, format: :telegram, locale: locale)}, #{::I18n.l(closes_at, format: :telegram, locale: locale)}"
+          Telegram::I18n.t(:chat_lifetime, locale: locale, until: moment)
         end
 
         private

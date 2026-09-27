@@ -36,7 +36,7 @@ module Telegram
       # него дописываем к первому сообщению, рядом с теми же кнопками. Отдельной
       # переменной, а не поверх text: с исходным текстом уходит перенос по 429,
       # и приписка не должна накапливаться от попытки к попытке.
-      hint = Telegram::I18n.t(:chat_lifetime, locale: Telegram::I18n.locale_for(recipient)) if arming
+      hint = Telegram::Chat::Flow.lifetime_hint(game, Telegram::I18n.locale_for(recipient)) if arming
 
       header, attachment = requests_for(recipient.telegram_chat_id.to_s, text, media, hint)
       # Кнопки вешаем на вложение — то сообщение, ради которого всё и слалось.

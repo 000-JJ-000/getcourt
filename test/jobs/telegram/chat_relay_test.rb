@@ -152,6 +152,21 @@ class Telegram::ChatRelayTest < ActiveSupport::TestCase
     assert params["caption"].end_with?("…")
   end
 
+  # Срок жизни чата — момент смены состава по расписанию игры, а не общая
+  # «суббота, 4:00»: у еженедельной игры по вторникам в 22:00 состав сменится
+  # вечером субботы, посередине между занятиями.
+  test "the lifetime line names the actual lineup change of a series" do
+    travel_to Time.zone.local(2026, 9, 27, 12, 0) do
+      series = Game.create!(court: @court, user: @owner, date: Date.new(2026, 9, 29), time: "22:00",
+                            duration_minutes: 60, recurring: true, kind: "game")
+
+      assert_equal "Чат живёт столько же, сколько состав: до 03.10.2026, 20:00.",
+                   Telegram::Chat::Flow.lifetime_hint(series, "ru")
+    ensure
+      series&.destroy
+    end
+  end
+
   # Приписка адресована именно новичку в чате — обрезать в подписи надо чужой
   # текст, а не её.
   test "a caption at the limit keeps the lifetime line" do
@@ -165,7 +180,7 @@ class Telegram::ChatRelayTest < ActiveSupport::TestCase
     end
 
     assert_equal 1024, params["caption"].length
-    assert params["caption"].end_with?(Telegram::I18n.t(:chat_lifetime))
+    assert params["caption"].end_with?(Telegram::Chat::Flow.lifetime_hint(@game, Telegram::I18n.locale_for(@owner)))
     assert_includes params["caption"], "…"
   end
 
@@ -232,7 +247,7 @@ class Telegram::ChatRelayTest < ActiveSupport::TestCase
   end
 
   # Кому чат включает сама доставка, карточки со сроком жизни он не увидит:
-  # строка про субботу должна прийти с первым же сообщением.
+  # строка о сроке жизни чата должна прийти с первым же сообщением.
   test "the first delivered message says how long the chat lives" do
     params = nil
 
@@ -241,7 +256,7 @@ class Telegram::ChatRelayTest < ActiveSupport::TestCase
         Telegram::DeliverChatMessageJob.perform_now(@game.id, @owner.id, "во сколько?")
       end
 
-      assert_includes params["text"], Telegram::I18n.t(:chat_lifetime)
+      assert_includes params["text"], Telegram::Chat::Flow.lifetime_hint(@game, Telegram::I18n.locale_for(@owner))
 
       # Второе сообщение — уже без напоминания: чат у человека включён.
       stub_singleton(Telegram::Api, :post, ->(_path, sent) { params = sent; { "ok" => true } }) do

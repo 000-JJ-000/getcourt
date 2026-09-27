@@ -81,7 +81,7 @@ class ParticipationTest < ActiveSupport::TestCase
     assert_equal [ "chat:pick", "chat:exit" ], buttons.first.map { |button| button[:callback_data] }
     # В счётчике только владелец: себе сообщение не приходит.
     assert_includes text, "(1)"
-    assert_includes text, Telegram::I18n.t(:chat_lifetime)
+    assert_includes text, Telegram::Chat::Flow.lifetime_hint(game, Telegram::I18n.locale_for(player))
   ensure
     game&.destroy
     [ owner, player ].compact.each(&:destroy)
