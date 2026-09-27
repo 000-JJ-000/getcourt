@@ -682,10 +682,12 @@ class Game < ApplicationRecord
 
   # По умолчанию открываем первый месяц, где есть куда записаться: в конце месяца
   # оставшиеся занятия уже закрыты сбросом состава, и календарь открывался пустым.
+  # Отменённые даты календарь показывает, но записаться на них нельзя — их не считаем.
   def first_prebooking_month_with_dates(range)
+    cancelled = prebooking_cancellations.where(date: range.first..range.last.end_of_month).pluck(:date).map(&:to_date)
     month = range.first
     while month <= range.last
-      return month if prebooking_dates_in(month).any?
+      return month if (prebooking_dates_in(month) - cancelled).any?
 
       month = month.next_month
     end
