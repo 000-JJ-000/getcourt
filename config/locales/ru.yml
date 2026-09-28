@@ -29,8 +29,7 @@ ru:
               invalid_type: "должен быть JPEG, PNG, WebP, MP4 или MOV"
               too_large: "слишком большой: фото — до 5 МБ, видео — до 25 МБ"
             base:
-              too_many_videos: "К игре можно приложить только одно видео"
-              too_many_images: "К игре можно приложить не больше шести фото"
+              game_storage_full: "У игры закончилось место: на фото и видео — до %{size} МБ"
   errors:
     messages:
       pending_exists: "уже имеет предложение для этого корта на проверке"

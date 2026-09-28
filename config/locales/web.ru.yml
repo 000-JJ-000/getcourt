@@ -193,7 +193,7 @@ ru:
         show_in_feed_hint: Раздел открыт всем, в том числе без входа на сайт.
         remove_confirm: Удалить это вложение?
         alt: Фото с игры
-        limits: "До %{images} фото (по %{image_size} МБ) и %{videos} видео (%{video_size} МБ)."
+        limits: "До %{total} МБ на игру: фото — по %{image_size} МБ, видео — по %{video_size} МБ."
       schema_name: Игра %{date}
       request_sent: Заявка отправлена
       cancel_request: Отменить заявку

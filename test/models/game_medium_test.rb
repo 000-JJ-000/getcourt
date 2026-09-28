@@ -35,8 +35,8 @@ class GameMediumTest < ActiveSupport::TestCase
     assert video.valid?, video.errors.full_messages.to_sentence
   end
 
-  test "caps how many photos one game can carry" do
-    GameMedium::MAX_IMAGES_PER_GAME.times { |i| build_medium(filename: "shot-#{i}.png").save! }
+  test "caps the total size of one game's files" do
+    fill_game_up_to(GameMedium::MAX_BYTES_PER_GAME)
 
     one_too_many = build_medium(filename: "extra.png")
 
@@ -44,26 +44,22 @@ class GameMediumTest < ActiveSupport::TestCase
     assert_includes one_too_many.errors.attribute_names, :base
   end
 
-  test "caps videos separately and more tightly than photos" do
-    build_medium(content_type: "video/mp4", filename: "first.mp4").save!
+  test "takes several videos while the game has room" do
+    2.times { |i| build_medium(content_type: "video/mp4", filename: "clip-#{i}.mp4").save! }
 
-    second = build_medium(content_type: "video/mp4", filename: "second.mp4")
-    assert_not second.valid?
-
-    # Фото при этом ещё можно: счётчики раздельные.
-    assert build_medium(filename: "still-fine.png").valid?
+    assert build_medium(content_type: "video/mp4", filename: "third.mp4").valid?
   end
 
   # Ошибку читает и веб, и бот, пересылающий вложение из чата: без перевода
   # вместо причины приходило «Translation missing».
   test "spells the limits out in the person's language" do
-    build_medium(content_type: "video/mp4", filename: "first.mp4").save!
+    fill_game_up_to(GameMedium::MAX_BYTES_PER_GAME)
 
     ::I18n.with_locale(:ru) do
-      second = build_medium(content_type: "video/mp4", filename: "second.mp4")
+      extra = build_medium(filename: "extra.png")
 
-      assert_not second.valid?
-      assert_equal "К игре можно приложить только одно видео", second.errors.full_messages.to_sentence
+      assert_not extra.valid?
+      assert_equal "У игры закончилось место: на фото и видео — до 100 МБ", extra.errors.full_messages.to_sentence
     end
 
     ::I18n.with_locale(:en) do
@@ -108,5 +104,12 @@ class GameMediumTest < ActiveSupport::TestCase
       identify: false
     )
     medium
+  end
+
+  # Настоящие 100 МБ в тест не кладём: сохраняем крошечный файл и выдаём его блоб за большой.
+  def fill_game_up_to(bytes)
+    filler = build_medium(filename: "filler.png")
+    filler.save!
+    filler.file.blob.update_column(:byte_size, bytes)
   end
 end
