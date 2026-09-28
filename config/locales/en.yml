@@ -58,8 +58,7 @@ en:
               invalid_type: "must be JPEG, PNG, WebP, MP4 or MOV"
               too_large: "is too big: up to 5 MB for photos and 25 MB for video"
             base:
-              too_many_videos: "A game can hold only one video"
-              too_many_images: "A game can hold at most six photos"
+              game_storage_full: "This game is out of space: photos and videos are capped at %{size} MB"
   errors:
     messages:
       pending_exists: "already has a pending suggestion for this court"

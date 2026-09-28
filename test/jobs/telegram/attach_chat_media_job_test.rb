@@ -69,7 +69,8 @@ class Telegram::AttachChatMediaJobTest < ActiveSupport::TestCase
   end
 
   test "an attachment over the game limit leaves no orphan file behind" do
-    GameMedium::MAX_IMAGES_PER_GAME.times { |i| attach_image("shot#{i}.png") }
+    attach_image("filler.png")
+    @game.game_media.last.file.blob.update_column(:byte_size, GameMedium::MAX_BYTES_PER_GAME)
     said = nil
 
     stub_singleton(Telegram::Api, :download_file, ->(_file_id) { [ png_file, "photo.jpg" ] }) do

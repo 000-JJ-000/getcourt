@@ -91,9 +91,8 @@
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-xs text-gray-500 dark:text-slate-400">
             <%= t("games.show.media.limits",
-                  images: GameMedium::MAX_IMAGES_PER_GAME,
+                  total: GameMedium::MAX_BYTES_PER_GAME / 1.megabyte,
                   image_size: GameMedium::MAX_IMAGE_SIZE / 1.megabyte,
-                  videos: GameMedium::MAX_VIDEOS_PER_GAME,
                   video_size: GameMedium::MAX_VIDEO_SIZE / 1.megabyte) %>
           </p>
           <%= f.submit t("games.show.media.upload"), class: "inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700" %>

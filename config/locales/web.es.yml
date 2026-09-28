@@ -189,7 +189,7 @@ es:
         show_in_feed_hint: Esa sección está abierta a todo el mundo, incluso sin iniciar sesión.
         remove_confirm: "¿Eliminar este archivo?"
         alt: Foto del partido
-        limits: "Hasta %{images} fotos (%{image_size} MB cada una) y %{videos} vídeo (%{video_size} MB)."
+        limits: "Hasta %{total} MB por partido: fotos de hasta %{image_size} MB, vídeos de hasta %{video_size} MB."
       schema_name: Partido %{date}
       request_sent: Solicitud enviada
       cancel_request: Cancelar solicitud

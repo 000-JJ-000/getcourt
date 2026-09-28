@@ -12,8 +12,8 @@ class GameMedium < ApplicationRecord
   MAX_IMAGE_SIZE = 5.megabytes
   MAX_VIDEO_SIZE = 25.megabytes
   MAX_TITLE_LENGTH = 100
-  MAX_IMAGES_PER_GAME = 6
-  MAX_VIDEOS_PER_GAME = 1
+  # Общий объём файлов одной игры, скрытые тоже считаются: они лежат на диске.
+  MAX_BYTES_PER_GAME = 100.megabytes
 
   belongs_to :game
   belongs_to :user
@@ -30,7 +30,7 @@ class GameMedium < ApplicationRecord
   validate :file_attached
   validate :supported_content_type
   validate :within_size_limit
-  validate :within_count_limit, on: :create
+  validate :within_game_quota, on: :create
 
   def image?
     IMAGE_TYPES.include?(content_type)
@@ -91,14 +91,15 @@ class GameMedium < ApplicationRecord
     errors.add(:file, :too_large)
   end
 
-  def within_count_limit
+  def within_game_quota
     return unless file.attached? && game
 
-    siblings = GameMedium.where(game_id: game_id).includes(file_attachment: :blob).to_a
-    if video?
-      errors.add(:base, :too_many_videos) if siblings.count(&:video?) >= MAX_VIDEOS_PER_GAME
-    else
-      errors.add(:base, :too_many_images) if siblings.count(&:image?) >= MAX_IMAGES_PER_GAME
-    end
+    used = ActiveStorage::Blob.joins(:attachments).where(
+      active_storage_attachments: { record_type: "GameMedium", name: "file",
+                                    record_id: GameMedium.where(game_id: game_id).select(:id) }
+    ).sum(:byte_size)
+    return if used + file.blob.byte_size <= MAX_BYTES_PER_GAME
+
+    errors.add(:base, :game_storage_full, size: MAX_BYTES_PER_GAME / 1.megabyte)
   end
 end

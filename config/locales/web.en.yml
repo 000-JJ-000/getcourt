@@ -189,7 +189,7 @@ en:
         show_in_feed_hint: That section is open to everyone, including visitors who are not signed in.
         remove_confirm: Remove this attachment?
         alt: Photo from the game
-        limits: "Up to %{images} photos (%{image_size} MB each) and %{videos} video (%{video_size} MB)."
+        limits: "Up to %{total} MB per game: photos up to %{image_size} MB each, videos up to %{video_size} MB."
       schema_name: Game %{date}
       request_sent: Request sent
       cancel_request: Cancel request
