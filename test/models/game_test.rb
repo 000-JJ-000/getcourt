@@ -718,6 +718,32 @@ class GameTest < ActiveSupport::TestCase
     owner&.destroy
   end
 
+  # Напоминание о четверге уходит в среду в 14:00 по Екатеринбургу — в
+  # Нью-Йорке это пять утра. Середина промежутка (утро среды) полсуток запаса
+  # не даёт, и состав меняется утром вторника.
+  test "the lineup changes at least twelve hours before the reminder" do
+    owner = User.create!(email: "ny-owner@example.com", timezone: "America/New_York")
+    game = Game.create!(court: courts(:one), user: owner, date: Date.new(2026, 9, 7), time: "18:00",
+                        recurring: true, recurrence_days: [ 1, 4 ], kind: "game")
+
+    assert_equal Time.find_zone("America/New_York").local(2026, 9, 8, 11, 0),
+                 game.occurrence_cycle.reset_at(Date.new(2026, 9, 7))
+  ensure
+    game&.destroy
+    owner&.destroy
+  end
+
+  # Вт + чт в 22:00: полсуток до напоминания в среду в 14:00 есть только ночью.
+  # Ночью не будим — сбрасываем в 11:00, запас выходит меньше.
+  test "without a morning twelve hours ahead the lineup changes the next morning" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 29), time: "22:00",
+                        duration_minutes: 60, recurring: true, recurrence_days: [ 2, 4 ], kind: "game")
+
+    assert_equal Time.zone.local(2026, 9, 30, 11, 0), game.occurrence_cycle.reset_at(Date.new(2026, 9, 29))
+  ensure
+    game&.destroy
+  end
+
   # Чат живёт столько же, сколько состав: у серии «ср + чт» состав среды
   # уступает место четвергу тем же утром, а не через несколько дней.
   test "the chat of a series with adjacent days closes on the morning of the next day" do

@@ -145,8 +145,9 @@ class ResetParticipationsJobTest < ActiveJob::TestCase
   end
 
   # Серия «пн + чт»: состав понедельника не может дожить до четверга — в четверг
-  # на корт выходит уже другой состав. Середина промежутка — утро среды,
-  # ближайшие к ней 11:00 — тоже среда.
+  # на корт выходит уже другой состав. Середина промежутка — утро среды, но
+  # напоминание о четверге уходит в среду днём, и полсуток до него остаются
+  # только у утра вторника.
   test "a series with two weekdays resets on the morning between them" do
     game = Game.create!(
       court: courts(:one), user: @owner, date: Date.new(2026, 9, 7), time: "18:00",
@@ -154,13 +155,13 @@ class ResetParticipationsJobTest < ActiveJob::TestCase
     )
     game.participations.create!(user: @player)
 
-    travel_to Time.zone.local(2026, 9, 9, 10, 59) do
+    travel_to Time.zone.local(2026, 9, 8, 10, 59) do
       ResetParticipationsJob.perform_now
 
-      assert_equal 1, game.participations.reload.count, "до утра среды состав понедельника ещё живёт"
+      assert_equal 1, game.participations.reload.count, "до утра вторника состав понедельника ещё живёт"
     end
 
-    travel_to Time.zone.local(2026, 9, 9, 11, 0) do
+    travel_to Time.zone.local(2026, 9, 8, 11, 0) do
       ResetParticipationsJob.perform_now
 
       assert_empty game.participations.reload

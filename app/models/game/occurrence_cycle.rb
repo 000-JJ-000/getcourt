@@ -3,15 +3,23 @@
 # Состав, чат, комментарий и медиа принадлежат одному занятию серии и живут до
 # момента, когда их место занимает следующее. Момент этот — 11:00, ближайшие к
 # середине промежутка между концом отыгранного занятия и началом следующего
-# неотменённого: у серии «вт + чт» с игрой в 22:00 это утро среды. Утро, а не
+# неотменённого: у серии по понедельникам в 18:00 это утро пятницы. Утро, а не
 # ночь: письмо о закрытом чате и о новом составе человек получает бодрствующим,
 # и до следующего занятия у него остаётся время, чтобы собраться заново.
+#
+# Напоминание о следующем занятии (GameReminderJob, накануне) должно застать
+# уже новый состав, причём с запасом в полсуток — чтобы успели записаться. Если
+# середина промежутка выходит позже, сброс сдвигается на более раннее утро: у
+# «пн + чт» середина — утро среды, а напоминание о четверге уходит в среду
+# днём, поэтому состав понедельника меняется утром вторника. Если же ни одно
+# утро запаса не даёт, берём первое после игры: ночью не будим.
 #
 # Отсюда все вопросы про эту границу: какому занятию принадлежит нынешний
 # состав (его же показывает карточка и по нему выбираются адресаты
 # напоминания), пора ли сбрасывать и до какого момента открыт чат.
 class Game::OccurrenceCycle
   RESET_HOUR = 11
+  REMINDER_MARGIN = 12.hours
 
   # Разовой игре делить нечего: её состав и чат живут до той же ночи с пятницы
   # на субботу, в которую CleanupPastOneOffGamesJob сносит саму игру.
@@ -73,7 +81,11 @@ class Game::OccurrenceCycle
       following = following_occurrence(occurrence)
       return self.class.next_weekly_reset_at(occurrence.end_of_day) if following.blank?
 
-      evening_between(game.occurrence_ends_at(occurrence), game.occurrence_starts_at(following))
+      morning_between(
+        game.occurrence_ends_at(occurrence),
+        game.occurrence_starts_at(following),
+        GameReminderJob.first_reminder_at(following) - REMINDER_MARGIN
+      )
     end
   end
 
@@ -120,15 +132,25 @@ class Game::OccurrenceCycle
       marker.present? && marker.to_date >= occurrence
     end
 
-    # Середину промежутка сдвигаем к ближайшим 11:00. Если ни одни в промежуток
-    # не попадают — занятия стоят впритык, — сбрасываем сразу, как первое
-    # закончилось: пока оно идёт, состав трогать нельзя.
-    def evening_between(ends_at, starts_at)
-      midpoint = ends_at + (starts_at - ends_at) / 2
-      evenings = (-1..1).map { |shift| (midpoint.to_date + shift).in_time_zone.change(hour: RESET_HOUR) }
+    # Середину промежутка сдвигаем к ближайшим 11:00, но не позже последних
+    # 11:00 до deadline. Если ни одни 11:00 в промежуток не попадают — занятия
+    # стоят впритык, — сбрасываем сразу, как первое закончилось: пока оно идёт,
+    # состав трогать нельзя.
+    def morning_between(ends_at, starts_at, deadline)
+      first = ends_at.change(hour: RESET_HOUR)
+      first += 1.day if first <= ends_at
+      return ends_at if first >= starts_at
 
-      evenings.select { |evening| evening > ends_at && evening < starts_at }
-              .min_by { |evening| (evening - midpoint).abs } || ends_at
+      midpoint = ends_at + (starts_at - ends_at) / 2
+      mornings = (-1..1).map { |shift| (midpoint.to_date + shift).in_time_zone.change(hour: RESET_HOUR) }
+      preferred = mornings.select { |morning| morning > ends_at && morning < starts_at }
+                          .min_by { |morning| (morning - midpoint).abs } || first
+
+      latest_safe = deadline.in_time_zone.change(hour: RESET_HOUR)
+      latest_safe -= 1.day if latest_safe > deadline
+      return first if latest_safe < first
+
+      [ preferred, latest_safe ].min
     end
 
     # Расписание знает сама игра: у серии из отмеченных дат последнее занятие
