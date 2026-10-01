@@ -1,6 +1,15 @@
 class GameReminderJob < ApplicationJob
   queue_as :default
 
+  # Час рассылки в поясе приложения — тот же, что у задач в config/recurring.yml.
+  # Первым о занятии приходит напоминание накануне; к нему состав должен уже
+  # смениться (см. Game::OccurrenceCycle).
+  HOUR = 14
+
+  def self.first_reminder_at(date)
+    (date - 1).in_time_zone(Rails.application.config.time_zone).change(hour: HOUR)
+  end
+
   def perform(day_offset = 0)
     target_date = Date.current + day_offset
     scope = Game.where(date: target_date).or(Game.still_running(target_date))

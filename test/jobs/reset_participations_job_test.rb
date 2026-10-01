@@ -6,11 +6,11 @@ class ResetParticipationsJobTest < ActiveJob::TestCase
   include CacheHelper
 
   # Серия по понедельникам в 18:00: состав понедельника уступает место
-  # следующему занятию в четверг в 20:00 — посередине между ними. Время в
+  # следующему занятию в пятницу в 11:00 — посередине между ними. Время в
   # тестах фиксированное: момент сброса теперь зависит от часа, а не только
   # от даты.
   SERIES_START = Date.new(2026, 8, 31)
-  RESET_MOMENT = Time.zone.local(2026, 9, 10, 20, 0)
+  RESET_MOMENT = Time.zone.local(2026, 9, 11, 11, 0)
   NEXT_OCCURRENCE = Date.new(2026, 9, 14)
 
   setup do
@@ -145,22 +145,23 @@ class ResetParticipationsJobTest < ActiveJob::TestCase
   end
 
   # Серия «пн + чт»: состав понедельника не может дожить до четверга — в четверг
-  # на корт выходит уже другой состав. Середина промежутка — ночь на среду,
-  # ближайшие к ней 20:00 — вечер вторника.
-  test "a series with two weekdays resets on the evening between them" do
+  # на корт выходит уже другой состав. Середина промежутка — утро среды, но
+  # напоминание о четверге уходит в среду днём, и полсуток до него остаются
+  # только у утра вторника.
+  test "a series with two weekdays resets on the morning between them" do
     game = Game.create!(
       court: courts(:one), user: @owner, date: Date.new(2026, 9, 7), time: "18:00",
       recurring: true, recurrence_days: [ 1, 4 ]
     )
     game.participations.create!(user: @player)
 
-    travel_to Time.zone.local(2026, 9, 8, 19, 59) do
+    travel_to Time.zone.local(2026, 9, 8, 10, 59) do
       ResetParticipationsJob.perform_now
 
-      assert_equal 1, game.participations.reload.count, "до вечера вторника состав понедельника ещё живёт"
+      assert_equal 1, game.participations.reload.count, "до утра вторника состав понедельника ещё живёт"
     end
 
-    travel_to Time.zone.local(2026, 9, 8, 20, 0) do
+    travel_to Time.zone.local(2026, 9, 8, 11, 0) do
       ResetParticipationsJob.perform_now
 
       assert_empty game.participations.reload
@@ -168,9 +169,9 @@ class ResetParticipationsJobTest < ActiveJob::TestCase
     end
   end
 
-  # У серии раз в неделю промежуток длиннее, и его середина — ночь на пятницу:
-  # состав живёт до вечера четверга.
-  test "a weekly series resets on the evening halfway to the next occurrence" do
+  # У серии раз в неделю промежуток длиннее, и его середина — утро пятницы:
+  # состав живёт до 11:00 пятницы.
+  test "a weekly series resets on the morning halfway to the next occurrence" do
     game = weekly_series
     game.participations.create!(user: @player)
 
@@ -200,7 +201,7 @@ class ResetParticipationsJobTest < ActiveJob::TestCase
     game.prebookings.create!(date: Date.new(2026, 9, 10), slot_index: 1, user: booked)
     game.prebookings.create!(date: Date.new(2026, 9, 17), slot_index: 1, user: later)
 
-    travel_to Time.zone.local(2026, 9, 8, 20, 0) do
+    travel_to Time.zone.local(2026, 9, 9, 11, 0) do
       ResetParticipationsJob.perform_now
     end
 

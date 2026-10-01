@@ -575,12 +575,12 @@ class GameTest < ActiveSupport::TestCase
   # чистка сносит только прошедшие разовые игры, сброс — только отыгранные серии.
   test "a game scheduled beyond the coming reset keeps its chat until its own" do
     one_off = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 20), kind: "game")
-    # Серия по воскресеньям: её состав уступит место следующему в среду вечером.
+    # Серия по воскресеньям: её состав уступит место следующему в четверг утром.
     series = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 6), time: "18:00", recurring: true, kind: "game")
 
     travel_to Time.zone.local(2026, 9, 2, 21, 0) do
       assert_equal Time.zone.local(2026, 9, 26, 4, 0), one_off.chat_open_until
-      assert_equal Time.zone.local(2026, 9, 9, 20, 0), series.chat_open_until
+      assert_equal Time.zone.local(2026, 9, 10, 11, 0), series.chat_open_until
       assert one_off.chat_open?
       assert series.chat_open?
     end
@@ -687,7 +687,7 @@ class GameTest < ActiveSupport::TestCase
     game&.destroy
   end
 
-  # Час занятия и «20:00» смены состава — это часы там, где выходят на корт.
+  # Час занятия и «11:00» смены состава — это часы там, где выходят на корт.
   # Сервер и открытая страница бывают в других поясах, и разница в два часа
   # сдвинула бы сброс на время, когда игра ещё идёт.
   test "the cycle is anchored to the time zone of the game owner" do
@@ -702,8 +702,8 @@ class GameTest < ActiveSupport::TestCase
 
         reset_at = game.occurrence_cycle.reset_at(game.date).in_time_zone("Europe/Moscow")
 
-        assert_equal Date.new(2026, 9, 10), reset_at.to_date
-        assert_equal 20, reset_at.hour, "восемь вечера — в поясе игры, а не вызывающего кода"
+        assert_equal Date.new(2026, 9, 11), reset_at.to_date
+        assert_equal 11, reset_at.hour, "одиннадцать утра — в поясе игры, а не вызывающего кода"
       end
     end
 
@@ -718,14 +718,40 @@ class GameTest < ActiveSupport::TestCase
     owner&.destroy
   end
 
+  # Напоминание о четверге уходит в среду в 14:00 по Екатеринбургу — в
+  # Нью-Йорке это пять утра. Середина промежутка (утро среды) полсуток запаса
+  # не даёт, и состав меняется утром вторника.
+  test "the lineup changes at least twelve hours before the reminder" do
+    owner = User.create!(email: "ny-owner@example.com", timezone: "America/New_York")
+    game = Game.create!(court: courts(:one), user: owner, date: Date.new(2026, 9, 7), time: "18:00",
+                        recurring: true, recurrence_days: [ 1, 4 ], kind: "game")
+
+    assert_equal Time.find_zone("America/New_York").local(2026, 9, 8, 11, 0),
+                 game.occurrence_cycle.reset_at(Date.new(2026, 9, 7))
+  ensure
+    game&.destroy
+    owner&.destroy
+  end
+
+  # Вт + чт в 22:00: полсуток до напоминания в среду в 14:00 есть только ночью.
+  # Ночью не будим — сбрасываем в 11:00, запас выходит меньше.
+  test "without a morning twelve hours ahead the lineup changes the next morning" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 29), time: "22:00",
+                        duration_minutes: 60, recurring: true, recurrence_days: [ 2, 4 ], kind: "game")
+
+    assert_equal Time.zone.local(2026, 9, 30, 11, 0), game.occurrence_cycle.reset_at(Date.new(2026, 9, 29))
+  ensure
+    game&.destroy
+  end
+
   # Чат живёт столько же, сколько состав: у серии «ср + чт» состав среды
-  # уступает место четвергу в тот же вечер, а не через несколько дней.
-  test "the chat of a series with adjacent days closes on the evening of the same day" do
+  # уступает место четвергу тем же утром, а не через несколько дней.
+  test "the chat of a series with adjacent days closes on the morning of the next day" do
     game = Game.create!(court: courts(:one), user: users(:one), date: Date.new(2026, 9, 9), time: "18:00",
                         recurring: true, recurrence_days: [ 3, 4 ], kind: "game")
 
     travel_to Time.zone.local(2026, 9, 9, 19, 30) do
-      assert_equal Time.zone.local(2026, 9, 9, 20, 0), game.chat_open_until
+      assert_equal Time.zone.local(2026, 9, 10, 11, 0), game.chat_open_until
     end
   ensure
     game&.destroy

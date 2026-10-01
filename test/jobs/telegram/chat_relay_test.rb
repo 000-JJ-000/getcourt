@@ -154,13 +154,13 @@ class Telegram::ChatRelayTest < ActiveSupport::TestCase
 
   # Срок жизни чата — момент смены состава по расписанию игры, а не общая
   # «суббота, 4:00»: у еженедельной игры по вторникам в 22:00 состав сменится
-  # вечером субботы, посередине между занятиями.
+  # утром субботы, посередине между занятиями.
   test "the lifetime line names the actual lineup change of a series" do
     travel_to Time.zone.local(2026, 9, 27, 12, 0) do
       series = Game.create!(court: @court, user: @owner, date: Date.new(2026, 9, 29), time: "22:00",
                             duration_minutes: 60, recurring: true, kind: "game")
 
-      assert_equal "Чат живёт столько же, сколько состав: до 03.10.2026, 20:00.",
+      assert_equal "Чат живёт столько же, сколько состав: до 03.10.2026, 11:00.",
                    Telegram::Chat::Flow.lifetime_hint(series, "ru")
     ensure
       series&.destroy
