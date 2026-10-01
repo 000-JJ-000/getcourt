@@ -33,6 +33,10 @@ production:
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
+    # Solid Queue's worker alone needs its threads + 2 (poller, heartbeat); in
+    # async mode the dispatcher, scheduler and Puma's enqueuing threads share
+    # this pool as well. Connections open lazily, so the cap costs nothing idle.
+    pool: 10
     database: storage/production_queue.sqlite3
     migrations_paths: db/queue_migrate
   cable:
