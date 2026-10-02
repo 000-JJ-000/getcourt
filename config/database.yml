@@ -26,17 +26,19 @@ test:
 production:
   primary:
     <<: *default
+    # Include the 3 job threads configured in queue.yml when sharing Puma.
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 3 %>
     database: storage/production.sqlite3
   cache:
     <<: *default
+    # Web requests and job threads share this pool in async mode.
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 3 %>
     database: storage/production_cache.sqlite3
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    # Solid Queue's worker alone needs its threads + 2 (poller, heartbeat); in
-    # async mode the dispatcher, scheduler and Puma's enqueuing threads share
-    # this pool as well. Connections open lazily, so the cap costs nothing idle.
-    pool: 10
+    # Include job threads and headroom for polling, scheduling and heartbeats.
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 7 %>
     database: storage/production_queue.sqlite3
     migrations_paths: db/queue_migrate
   cable:
