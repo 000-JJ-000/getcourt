@@ -574,6 +574,17 @@ class GameTest < ActiveSupport::TestCase
     game&.destroy
   end
 
+  test "ending a series with past scores cannot make it a training" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.current - 14.days, time: "10:00", recurring: true)
+    Match.create!(user: users(:one), game: game, mode: "singles", outcome: "win", played_at: 14.days.ago, score: "6:4")
+
+    assert_not game.update(kind: "training", recurring: false)
+    assert_includes game.errors.full_messages.join, "recorded scores"
+    assert_equal "game", game.reload.kind
+  ensure
+    game&.destroy
+  end
+
   test "checking with_coach on a scored game is refused too" do
     coach = User.create!(email: "scored-game-coach@example.com", coach: true)
     game = Game.create!(court: courts(:one), user: users(:one), date: Date.current, time: "10:00")

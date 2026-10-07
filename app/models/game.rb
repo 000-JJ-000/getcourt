@@ -927,9 +927,10 @@ class Game < ApplicationRecord
   # У серии считается только текущее занятие: прошлые на странице не показываются,
   # а их матчи остаются в статистике как сыгранные игры.
   def training_cannot_hide_recorded_scores
-    # Перенос в той же правке не должен сдвигать границу проверки уже записанного счёта.
+    # Перенос в той же правке не должен сдвигать границу проверки уже записанного счёта,
+    # а остановленная серия становится разовой игрой, у которой видны все её матчи.
     persisted_game = self.class.find(id)
-    cycle_start = persisted_game.current_cycle_start if persisted_game.series?
+    cycle_start = persisted_game.current_cycle_start if persisted_game.series? && series?
     scope = matches
     scope = scope.where("played_at >= ?", cycle_start) if cycle_start
     errors.add(:kind, "cannot switch to training while the game has recorded scores") if scope.exists?
