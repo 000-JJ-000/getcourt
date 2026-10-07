@@ -313,6 +313,7 @@ en:
       with_coach_hint: If checked, this game will be held with a coach.
       coach: Coach
       coach_blank: "— select coach —"
+      coach_hint: "Registered on GetCourt — they'll get an invitation."
       second_coach: Second coach (optional)
       second_coach_blank: "— no second coach —"
       second_coach_hint: A training can be run by two coaches.

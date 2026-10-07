@@ -317,6 +317,7 @@ es:
       with_coach_hint: Si lo marcas, el partido se jugará con entrenador.
       coach: Entrenador
       coach_blank: "— elige entrenador —"
+      coach_hint: "Registrado en GetCourt: recibirá una invitación."
       second_coach: Segundo entrenador (opcional)
       second_coach_blank: "— sin segundo entrenador —"
       second_coach_hint: Un entrenamiento puede dirigirse por dos entrenadores.
