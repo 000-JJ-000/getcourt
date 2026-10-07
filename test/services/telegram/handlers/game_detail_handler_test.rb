@@ -23,6 +23,26 @@ class Telegram::Handlers::GameDetailHandlerTest < ActiveSupport::TestCase
     coach&.destroy
   end
 
+  test "includes coach line when game has only a guest coach" do
+    @game.update_columns(with_coach: true, guest_coach_name: "Иван")
+
+    text, = render_game
+
+    assert_includes text, "Тренер: С тренером"
+  end
+
+  test "guest coach is named next to the registered one" do
+    coach = User.create!(email: "named-coach-#{SecureRandom.hex(4)}@example.com", name: "Анна", coach: true)
+    @game.update_columns(with_coach: true, coach_id: coach.id, coach_invitation_status: "accepted", guest_coach_name: "Иван")
+
+    names = Telegram::Helpers::GameFormatting.coach_names(@game)
+
+    assert_equal [ "Иван" ], names.last(1)
+    assert_equal 2, names.size
+  ensure
+    coach&.destroy
+  end
+
   # Галку поставили, тренера ещё ищут — обещать занятие с тренером рано.
   test "omits coach line while the coach is not chosen" do
     @game.update_columns(with_coach: true)

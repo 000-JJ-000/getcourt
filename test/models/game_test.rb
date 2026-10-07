@@ -585,6 +585,20 @@ class GameTest < ActiveSupport::TestCase
     game&.destroy
   end
 
+  test "guest coach name is squished and dropped together with the coach" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.current, time: "10:00",
+                        with_coach: true, guest_coach_name: "  Иван   Петров ")
+
+    assert_equal "Иван Петров", game.guest_coach_name
+    assert game.training?
+
+    game.update!(with_coach: false)
+
+    assert_nil game.reload.guest_coach_name
+  ensure
+    game&.destroy
+  end
+
   test "checking with_coach on a scored game is refused too" do
     coach = User.create!(email: "scored-game-coach@example.com", coach: true)
     game = Game.create!(court: courts(:one), user: users(:one), date: Date.current, time: "10:00")

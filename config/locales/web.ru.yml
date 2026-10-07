@@ -222,6 +222,7 @@ ru:
       coach_decline: Отказаться
       coach_invitation_accepted: Приглашение тренером принято.
       coach_invitation_declined: Приглашение тренером отклонено.
+      guest_coach: "Гость, без аккаунта"
       coach_status:
         pending: Ожидает ответа тренера
         accepted: Принято
@@ -322,6 +323,9 @@ ru:
       second_coach: Второй тренер (необязательно)
       second_coach_blank: "— без второго тренера —"
       second_coach_hint: Тренировку могут вести два тренера.
+      guest_coach: "Гостевой тренер (необязательно)"
+      guest_coach_placeholder: "Имя тренера"
+      guest_coach_hint: "Тренер без аккаунта в GetCourt — укажите просто имя."
       urgent_player_search: Поиск игроков
       urgent_player_search_hint: Показывать эту игру в разделе «Игры, где ищут игроков»
         и уведомить пользователей с включёнными уведомлениями поблизости.

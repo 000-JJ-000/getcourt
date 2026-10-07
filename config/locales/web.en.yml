@@ -218,6 +218,7 @@ en:
       coach_decline: Decline
       coach_invitation_accepted: Coach invitation accepted.
       coach_invitation_declined: Coach invitation declined.
+      guest_coach: "Guest, no account"
       coach_status:
         pending: Waiting for coach response
         accepted: Accepted
@@ -315,6 +316,9 @@ en:
       second_coach: Second coach (optional)
       second_coach_blank: "— no second coach —"
       second_coach_hint: A training can be run by two coaches.
+      guest_coach: "Guest coach (optional)"
+      guest_coach_placeholder: "Coach's name"
+      guest_coach_hint: "A coach without a GetCourt account — just enter a name."
       urgent_player_search: Players search
       urgent_player_search_hint: Show this game in "Games looking for player" and
         notify users with enabled nearby alerts.

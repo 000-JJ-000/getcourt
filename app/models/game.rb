@@ -84,6 +84,7 @@ class Game < ApplicationRecord
   validates :kind, inclusion: { in: KINDS }
   validates :coach_invitation_status, inclusion: { in: COACH_INVITATION_STATUSES }, allow_nil: true
   validates :second_coach_invitation_status, inclusion: { in: COACH_INVITATION_STATUSES }, allow_nil: true
+  validates :guest_coach_name, length: { maximum: 50 }
   validate :selected_coaches_are_coaches
   validate :training_cannot_hide_recorded_scores, if: -> { persisted? && training? && kind_changed? }
   validate :prebooking_requires_recurring
@@ -893,9 +894,13 @@ class Game < ApplicationRecord
     # Тренер бывает только у тренировки, так что игра с тренером ею и становится.
     self.kind = "training" if with_coach?
 
+    # Гостевой тренер без аккаунта — просто имя, как у гостя в составе.
+    self.guest_coach_name = guest_coach_name.to_s.squish.presence
+
     unless with_coach?
       self.coach = nil
       self.second_coach = nil
+      self.guest_coach_name = nil
       self.coach_invitation_status = nil
       self.second_coach_invitation_status = nil
       return

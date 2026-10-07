@@ -219,6 +219,7 @@ es:
       coach_decline: Rechazar
       coach_invitation_accepted: Invitación de entrenador aceptada.
       coach_invitation_declined: Invitación de entrenador rechazada.
+      guest_coach: "Invitado, sin cuenta"
       coach_status:
         pending: Esperando la respuesta del entrenador
         accepted: Aceptada
@@ -319,6 +320,9 @@ es:
       second_coach: Segundo entrenador (opcional)
       second_coach_blank: "— sin segundo entrenador —"
       second_coach_hint: Un entrenamiento puede dirigirse por dos entrenadores.
+      guest_coach: "Entrenador invitado (opcional)"
+      guest_coach_placeholder: "Nombre del entrenador"
+      guest_coach_hint: "Un entrenador sin cuenta en GetCourt: basta con el nombre."
       urgent_player_search: Búsqueda de jugadores
       urgent_player_search_hint: Muestra este partido en «Partidos que buscan jugadores»
         y notifica a los usuarios con alertas cercanas activadas.
