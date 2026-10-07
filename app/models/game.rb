@@ -924,8 +924,12 @@ class Game < ApplicationRecord
 
   # Счёт у тренировки не показать и не исправить, поэтому игру с уже записанными
   # матчами в тренировку не превращаем — иначе счёт остался бы висеть в статистике.
+  # У серии считается только текущее занятие: прошлые на странице не показываются,
+  # а их матчи остаются в статистике как сыгранные игры.
   def training_cannot_hide_recorded_scores
-    errors.add(:kind, "cannot switch to training while the game has recorded scores") if matches.exists?
+    scope = matches
+    scope = scope.where("played_at >= ?", current_cycle_start) if series? && current_cycle_start
+    errors.add(:kind, "cannot switch to training while the game has recorded scores") if scope.exists?
   end
 
   def selected_coaches_are_coaches
