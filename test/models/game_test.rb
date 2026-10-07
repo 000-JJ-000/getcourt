@@ -563,6 +563,17 @@ class GameTest < ActiveSupport::TestCase
     game&.destroy
   end
 
+  test "rescheduling cannot hide current scores when switching to training" do
+    game = Game.create!(court: courts(:one), user: users(:one), date: Date.current - 14.days, time: "10:00", recurring: true)
+    Match.create!(user: users(:one), game: game, mode: "singles", outcome: "win", played_at: game.current_cycle_start + 10.hours, score: "6:4")
+
+    assert_not game.update(kind: "training", date: Date.current + 7.days)
+    assert_includes game.errors.full_messages.join, "recorded scores"
+    assert_equal "game", game.reload.kind
+  ensure
+    game&.destroy
+  end
+
   test "checking with_coach on a scored game is refused too" do
     coach = User.create!(email: "scored-game-coach@example.com", coach: true)
     game = Game.create!(court: courts(:one), user: users(:one), date: Date.current, time: "10:00")
