@@ -1,0 +1,126 @@
+# Production-oriented Compose: web + Solid Queue worker + PostGIS.
+# PostgreSQL is NOT published to the host. Put a reverse proxy in front of `web`.
+#
+# First-time / schema changes (run once; do not let every replica migrate):
+#   docker compose -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm migrate
+#
+# Start:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# See docs/deployment.md for secrets, networking, backup, and multi-arch builds.
+
+x-app-env: &app_env
+  RAILS_ENV: production
+  RAILS_SERVE_STATIC_FILES: "1"
+  DATABASE_HOST: db
+  DATABASE_PORT: "5432"
+  DATABASE_USERNAME: ${DATABASE_USERNAME:?DATABASE_USERNAME is required}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
+  DATABASE_NAME: ${DATABASE_NAME:?DATABASE_NAME is required}
+  DATABASE_CACHE_NAME: ${DATABASE_CACHE_NAME:?DATABASE_CACHE_NAME is required}
+  DATABASE_QUEUE_NAME: ${DATABASE_QUEUE_NAME:?DATABASE_QUEUE_NAME is required}
+  DATABASE_CABLE_NAME: ${DATABASE_CABLE_NAME:?DATABASE_CABLE_NAME is required}
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE is required}
+  APP_HOST: ${APP_HOST:?APP_HOST is required}
+  RAILS_ALLOWED_HOSTS: ${RAILS_ALLOWED_HOSTS:-}
+  SOLID_QUEUE_IN_PUMA: ""
+  RAILS_LOG_LEVEL: ${RAILS_LOG_LEVEL:-info}
+
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:?DATABASE_USERNAME is required}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
+      POSTGRES_DB: ${DATABASE_NAME:?DATABASE_NAME is required}
+    # Intentionally no host ports — only the Compose network can reach Postgres.
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - internal
+
+  migrate:
+    profiles: ["migrate"]
+    build:
+      context: .
+      target: runtime
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env.production
+        required: true
+    environment:
+      <<: *app_env
+    command: ["migrate"]
+    networks:
+      - internal
+
+  web:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env.production
+        required: true
+    environment:
+      <<: *app_env
+    # Do NOT run db:prepare here — use the migrate profile.
+    command: ["web"]
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - rails_storage:/rails/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - internal
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env.production
+        required: true
+    environment:
+      <<: *app_env
+    command: ["worker"]
+    volumes:
+      - rails_storage:/rails/storage
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'solid-queue|jobs start' >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - internal
+
+volumes:
+  postgres_prod_data:
+  rails_storage:
+
+networks:
+  internal:
+    driver: bridge

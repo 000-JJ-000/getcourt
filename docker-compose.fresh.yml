@@ -1,17 +1,20 @@
-# Disposable PostGIS for fresh-init validation. Does not touch postgres_data.
+# Disposable PostGIS for fresh-init / backup-restore drills.
+# Does not touch postgres_data or postgres_prod_data volumes.
+#
+#   docker compose -p getcourt-fresh -f docker-compose.fresh.yml --env-file .env.production up -d
 services:
   db_fresh:
     image: postgis/postgis:16-3.5
     environment:
-      POSTGRES_USER: getcourt
-      POSTGRES_PASSWORD: getcourt
-      POSTGRES_DB: getcourt_fresh_primary
+      POSTGRES_USER: ${DATABASE_USERNAME:-getcourt}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-getcourt}
+      POSTGRES_DB: ${DATABASE_NAME:-getcourt_fresh_primary}
     ports:
-      - "5433:5432"
+      - "${FRESH_DB_PORT:-5433}:5432"
     volumes:
       - postgres_fresh_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U getcourt -d getcourt_fresh_primary"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10

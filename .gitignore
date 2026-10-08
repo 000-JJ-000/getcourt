@@ -7,8 +7,14 @@
 # Ignore bundler config.
 /.bundle
 
-# Ignore all environment files.
+# Ignore all environment files (including production secrets).
 /.env
+/.env.*
+!/.env-example
+!/.env.production.example
+
+# Local Postgres backups (may contain PII)
+/backups/
 
 # Ignore all logfiles and tempfiles.
 /log/*

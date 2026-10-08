@@ -1,5 +1,9 @@
-# Local development stack: Rails app + PostgreSQL/PostGIS.
-# Usage: see README "Docker Compose (PostgreSQL/PostGIS)".
+# Local development: PostGIS + Rails web (db:prepare on start for convenience).
+# Production: use docker-compose.prod.yml instead.
+#
+#   docker compose up -d db
+#   docker compose up --build
+#   docker compose --profile worker up -d   # optional dedicated Solid Queue
 
 services:
   db:
@@ -21,7 +25,9 @@ services:
       start_period: 10s
 
   web:
-    build: .
+    build:
+      context: .
+      target: development
     restart: unless-stopped
     depends_on:
       db:
@@ -46,13 +52,58 @@ services:
       DATABASE_TEST_QUEUE_NAME: ${DATABASE_TEST_QUEUE_NAME:-getcourt_test_queue}
       DATABASE_TEST_CABLE_NAME: ${DATABASE_TEST_CABLE_NAME:-getcourt_test_cable}
       APP_HOST: ${APP_HOST:-http://localhost:3000}
+      # Dev convenience: jobs can run in Puma unless a dedicated worker profile is used.
+      SOLID_QUEUE_IN_PUMA: ${SOLID_QUEUE_IN_PUMA:-}
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+    # Development keeps one-shot prepare for convenience; production does not.
+    command: >
+      bash -c "bundle check || bundle install;
+      bin/rails db:prepare;
+      bin/docker-entrypoint web"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    profiles: ["worker"]
+    build:
+      context: .
+      target: development
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      RAILS_ENV: ${RAILS_ENV:-development}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-getcourt}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-getcourt}
+      DATABASE_NAME: ${DATABASE_NAME:-getcourt_development}
+      DATABASE_CACHE_NAME: ${DATABASE_CACHE_NAME:-getcourt_development_cache}
+      DATABASE_QUEUE_NAME: ${DATABASE_QUEUE_NAME:-getcourt_development_queue}
+      DATABASE_CABLE_NAME: ${DATABASE_CABLE_NAME:-getcourt_development_cable}
+      SOLID_QUEUE_IN_PUMA: ""
     volumes:
       - .:/rails
       - bundle_cache:/usr/local/bundle
     command: >
       bash -c "bundle check || bundle install;
-      ruby bin/rails db:prepare;
-      ruby bin/rails server -b 0.0.0.0 -p 3000"
+      bin/docker-entrypoint worker"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'solid-queue|jobs start' >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
 volumes:
   postgres_data:

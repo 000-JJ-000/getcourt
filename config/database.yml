@@ -9,8 +9,8 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
   port: <%= ENV.fetch("DATABASE_PORT", "5432") %>
-  username: <%= ENV.fetch("DATABASE_USERNAME", "getcourt") %>
-  password: <%= ENV.fetch("DATABASE_PASSWORD", "getcourt") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME") { Rails.env.production? ? (raise "DATABASE_USERNAME is required") : "getcourt" } %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD") { Rails.env.production? ? (raise "DATABASE_PASSWORD is required") : "getcourt" } %>
 
 development:
   primary:
@@ -57,20 +57,20 @@ production:
     adapter: postgis
     # Include the 3 job threads configured in queue.yml when sharing Puma.
     pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 3 %>
-    database: <%= ENV.fetch("DATABASE_NAME", "getcourt_production") %>
+    database: <%= ENV.fetch("DATABASE_NAME") %>
   cache:
     <<: *default
     # Web requests and job threads share this pool in async mode.
     pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 3 %>
-    database: <%= ENV.fetch("DATABASE_CACHE_NAME", "getcourt_production_cache") %>
+    database: <%= ENV.fetch("DATABASE_CACHE_NAME") %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
     # Include job threads and headroom for polling, scheduling and heartbeats.
     pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 7 %>
-    database: <%= ENV.fetch("DATABASE_QUEUE_NAME", "getcourt_production_queue") %>
+    database: <%= ENV.fetch("DATABASE_QUEUE_NAME") %>
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: <%= ENV.fetch("DATABASE_CABLE_NAME", "getcourt_production_cable") %>
+    database: <%= ENV.fetch("DATABASE_CABLE_NAME") %>
     migrations_paths: db/cable_migrate

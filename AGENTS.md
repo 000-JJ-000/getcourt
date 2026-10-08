@@ -83,7 +83,9 @@ bin/rails g migration MigrationName
 ```
 
 PostgreSQL configuration: [config/database.yml](config/database.yml)
-Docker Compose: [docker-compose.yml](docker-compose.yml)
+Docker Compose (dev): [docker-compose.yml](docker-compose.yml)
+Docker Compose (prod-oriented): [docker-compose.prod.yml](docker-compose.prod.yml)
+Deployment guide: [docs/deployment.md](docs/deployment.md)
 
 ## Architecture Notes (project-specific)
 

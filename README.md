@@ -37,16 +37,28 @@ Main technologies
 
 ## Docker Compose (PostgreSQL/PostGIS)
 
-Copy `.env-example` to `.env` and adjust if needed, then:
+**Local development** — copy `.env-example` to `.env`, then:
 
 ```bash
 docker compose up -d db          # PostGIS only (use with local Ruby via bin/dev)
-docker compose up --build        # app + database
-docker compose run --rm web bin/rails db:prepare
+docker compose up --build        # web + database (db:prepare on start)
+docker compose --profile worker up -d   # optional dedicated Solid Queue worker
 docker compose down              # stop; data kept in the postgres_data volume
 ```
 
-Four logical databases are created on one Postgres server: primary (PostGIS), cache, queue, and cable. Defaults match `.env-example`.
+**Production-oriented stack** (web + worker + PostGIS, no public DB port):
+
+```bash
+cp .env.production.example .env.production   # fill required secrets
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d db
+docker compose -f docker-compose.prod.yml --env-file .env.production --profile migrate run --rm migrate
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d web worker
+curl -fsS http://127.0.0.1:3000/up
+```
+
+Four logical databases live on one Postgres server: primary (PostGIS), cache, queue, and cable.
+
+Full ops guide (secrets, reverse proxy, backups, AMD64/ARM64 builds): [docs/deployment.md](docs/deployment.md).
 
 ## Public API and MCP
 

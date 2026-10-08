@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Usage:
+#   docker-entrypoint web|server     → Puma (no Solid Queue in-process)
+#   docker-entrypoint worker|jobs    → Solid Queue supervisor
+#   docker-entrypoint migrate|db     → db:prepare once (explicit ops step)
+#   docker-entrypoint <command...>   → pass-through
+
+role="${1:-}"
+
+case "${role}" in
+  web|server)
+    shift || true
+    # Dedicated worker owns Solid Queue. Never enable in-Puma processing here
+    # unless an operator explicitly sets SOLID_QUEUE_IN_PUMA=true.
+    if [ "${SOLID_QUEUE_IN_PUMA:-}" = "true" ]; then
+      echo "[entrypoint] WARNING: SOLID_QUEUE_IN_PUMA=true — jobs also run inside Puma"
+    else
+      unset SOLID_QUEUE_IN_PUMA || true
+    fi
+    exec bundle exec puma -C config/puma.rb "$@"
+    ;;
+  worker|jobs)
+    shift || true
+    unset SOLID_QUEUE_IN_PUMA || true
+    exec bundle exec ruby bin/jobs start "$@"
+    ;;
+  migrate|db|db:prepare)
+    shift || true
+    echo "[entrypoint] Running database prepare/migrate (explicit one-shot)"
+    exec bundle exec rails db:prepare "$@"
+    ;;
+  "" )
+    echo "Usage: docker-entrypoint {web|worker|migrate|command...}" >&2
+    exit 1
+    ;;
+  *)
+    exec "$@"
+    ;;
+esac
