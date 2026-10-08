@@ -21,7 +21,7 @@ Main technologies:
 - Ruby 4.0 / Rails 8.1
 - Hotwire (Turbo + Stimulus), Propshaft + importmap
 - Tailwind CSS
-- SQLite (dev + production), Solid Queue / Solid Cache / Solid Cable
+- PostgreSQL/PostGIS (primary) + separate DBs for Solid Queue / Cache / Cable
 - Active Storage with libvips for media
 - Geocoding (Google / Nominatim), Google Maps in the browser
 
@@ -82,7 +82,8 @@ bin/rails db:fixtures:load
 bin/rails g migration MigrationName
 ```
 
-SQLite configuration: [config/database.yml](config/database.yml)
+PostgreSQL configuration: [config/database.yml](config/database.yml)
+Docker Compose: [docker-compose.yml](docker-compose.yml)
 
 ## Architecture Notes (project-specific)
 

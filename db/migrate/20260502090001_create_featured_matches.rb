@@ -12,7 +12,7 @@ class CreateFeaturedMatches < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :featured_matches, :active, unique: true, where: "active = 1"
+    add_index :featured_matches, :active, unique: true, where: "(active = TRUE)"
     add_index :featured_matches, :starts_at
   end
 end

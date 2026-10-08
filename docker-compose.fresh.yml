@@ -1,0 +1,21 @@
+# Disposable PostGIS for fresh-init validation. Does not touch postgres_data.
+services:
+  db_fresh:
+    image: postgis/postgis:16-3.5
+    environment:
+      POSTGRES_USER: getcourt
+      POSTGRES_PASSWORD: getcourt
+      POSTGRES_DB: getcourt_fresh_primary
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_fresh_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U getcourt -d getcourt_fresh_primary"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_fresh_data:

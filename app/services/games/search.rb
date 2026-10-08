@@ -26,12 +26,12 @@ module Games
       today = ActiveRecord::Base.connection.quote(Date.current)
       # Тот же вопрос, что и у Game.still_running, но внутри ORDER BY: серия
       # идёт сверху, пока её расписание не кончилось.
-      running_sql = "(games.recurring = 1 OR games.recurring_monthly = 1 OR games.ends_on >= #{today})"
+      running_sql = "(games.recurring IS TRUE OR games.recurring_monthly IS TRUE OR games.ends_on >= #{today})"
       # А по сегодняшнему дню сортируются только те, чья ближайшая дата уже не
       # лежит в колонке: бесконечная серия и та, что идёт прямо сейчас. У
       # будущей игры — хоть разовой, хоть серии — ключ её собственная дата,
       # иначе октябрьская утренняя вставала бы выше сентябрьской вечерней.
-      started_sql = "(games.recurring = 1 OR games.recurring_monthly = 1 OR " \
+      started_sql = "(games.recurring IS TRUE OR games.recurring_monthly IS TRUE OR " \
                     "(games.date < #{today} AND games.ends_on >= #{today}))"
 
       @scope.order(

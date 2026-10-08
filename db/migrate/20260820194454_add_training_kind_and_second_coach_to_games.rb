@@ -6,7 +6,7 @@ class AddTrainingKindAndSecondCoachToGames < ActiveRecord::Migration[8.1]
     add_column :games, :second_coach_invitation_status, :string
 
     # Тренер бывает только у тренировки, поэтому старые игры с тренером ею и становятся.
-    execute "UPDATE games SET kind = 'training' WHERE with_coach = 1"
+    execute "UPDATE games SET kind = 'training' WHERE with_coach IS TRUE"
   end
 
   def down

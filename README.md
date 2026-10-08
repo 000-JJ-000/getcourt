@@ -28,11 +28,25 @@ Main technologies
 - Ruby 4.0 / Ruby on Rails 8.1
 - Hotwire (Turbo + Stimulus) for interactivity, Propshaft + importmap for assets
 - Tailwind CSS for styling
-- SQLite for development and production
+- PostgreSQL with PostGIS (primary) plus separate logical DBs for Solid Cache / Queue / Cable
 - Solid Queue / Solid Cache / Solid Cable for jobs, caching and websockets
 - Active Storage with libvips for photos and clips
 - RubyLLM (Gemini) for the AI features
 - Google / Nominatim geocoding for addresses, Google Maps for the pickers
+- Docker Compose for local PostgreSQL/PostGIS and optional app container
+
+## Docker Compose (PostgreSQL/PostGIS)
+
+Copy `.env-example` to `.env` and adjust if needed, then:
+
+```bash
+docker compose up -d db          # PostGIS only (use with local Ruby via bin/dev)
+docker compose up --build        # app + database
+docker compose run --rm web bin/rails db:prepare
+docker compose down              # stop; data kept in the postgres_data volume
+```
+
+Four logical databases are created on one Postgres server: primary (PostGIS), cache, queue, and cable. Defaults match `.env-example`.
 
 ## Public API and MCP
 

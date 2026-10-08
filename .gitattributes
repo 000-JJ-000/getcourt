@@ -7,3 +7,10 @@ db/schema.rb linguist-generated
 vendor/* linguist-vendored
 config/credentials/*.yml.enc diff=rails_credentials
 config/credentials.yml.enc diff=rails_credentials
+
+# Keep executable stubs and shell scripts LF so Linux containers can run them.
+bin/* text eol=lf
+*.sh text eol=lf
+script/* text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf

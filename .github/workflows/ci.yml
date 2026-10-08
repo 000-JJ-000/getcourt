@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libvips42
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips42
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libvips42
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips42
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libvips42
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips42
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -74,15 +74,24 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # services:
-    #  redis:
-    #    image: redis
-    #    ports:
-    #      - 6379:6379
-    #    options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_USER: getcourt
+          POSTGRES_PASSWORD: getcourt
+          POSTGRES_DB: getcourt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U getcourt -d getcourt_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libyaml-dev libvips42 pkg-config google-chrome-stable
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev libvips42 pkg-config google-chrome-stable
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,12 +105,27 @@ jobs:
       - name: Check that every autoloaded file eager loads
         env:
           RAILS_ENV: test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USERNAME: getcourt
+          DATABASE_PASSWORD: getcourt
+          DATABASE_TEST_NAME: getcourt_test
+          DATABASE_TEST_CACHE_NAME: getcourt_test_cache
+          DATABASE_TEST_QUEUE_NAME: getcourt_test_queue
+          DATABASE_TEST_CABLE_NAME: getcourt_test_cable
         run: bin/rails zeitwerk:check
 
       - name: Run tests
         env:
           RAILS_ENV: test
-          # REDIS_URL: redis://localhost:6379/0
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USERNAME: getcourt
+          DATABASE_PASSWORD: getcourt
+          DATABASE_TEST_NAME: getcourt_test
+          DATABASE_TEST_CACHE_NAME: getcourt_test_cache
+          DATABASE_TEST_QUEUE_NAME: getcourt_test_queue
+          DATABASE_TEST_CABLE_NAME: getcourt_test_cable
         run: bin/rails db:test:prepare test test:system
 
       - name: Keep screenshots from failed system tests

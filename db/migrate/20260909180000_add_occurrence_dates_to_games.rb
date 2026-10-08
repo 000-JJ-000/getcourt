@@ -7,7 +7,7 @@ class AddOccurrenceDatesToGames < ActiveRecord::Migration[8.1]
     add_column :games, :ends_on, :date
     add_index :games, :ends_on
 
-    execute "UPDATE games SET ends_on = date WHERE recurring = 0"
+    execute "UPDATE games SET ends_on = date WHERE recurring IS FALSE"
   end
 
   def down

@@ -186,10 +186,10 @@ module Users
       (Match.where(user_id: ids).or(Match.where(opponent_id: ids)).to_a + matches_mentioning_source).uniq
     end
 
-    # `stats` is a JSON text column, so the LIKE is only a prefilter — the ids are
-    # compared exactly once the row is parsed.
+    # `stats` is json/jsonb; cast to text for the LIKE prefilter. Ids are compared
+    # exactly once the row is parsed.
     def matches_mentioning_source
-      @matches_mentioning_source ||= Match.where("stats LIKE ?", "%#{source.id}%").to_a
+      @matches_mentioning_source ||= Match.where("stats::text LIKE ?", "%#{source.id}%").to_a
     end
 
     def sides_overlap?(match)
