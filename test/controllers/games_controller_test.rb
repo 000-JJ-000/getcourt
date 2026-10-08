@@ -1020,6 +1020,26 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     coach&.destroy
   end
 
+  test "guest coach name is saved and shown on the game page" do
+    owner = User.create!(email: "guest-coach-owner@example.com")
+    post session_url, params: { email: owner.email }
+
+    post games_url, params: {
+      game: { court_id: courts(:one).id, date: Date.current + 1.day, time: "18:00", with_coach: "1", guest_coach_name: "Иван" }
+    }
+
+    game = Game.order(:id).last
+    assert_equal "Иван", game.guest_coach_name
+    assert game.training?
+
+    get game_url(game)
+
+    assert_includes response.body, "Иван"
+  ensure
+    game&.destroy
+    owner&.destroy
+  end
+
   test "selected coach can accept invitation on the game page" do
     coach = User.create!(email: "accept-coach@example.com", coach: true)
     game = Game.create!(

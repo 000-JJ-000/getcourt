@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_23_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_08_090000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.integer "blob_id", null: false
     t.datetime "created_at", null: false
@@ -290,6 +290,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_23_090000) do
     t.boolean "urgent_player_search", default: false, null: false
     t.integer "user_id", null: false
     t.boolean "with_coach", default: false, null: false
+    t.string "guest_coach_name"
     t.index ["coach_id"], name: "index_games_on_coach_id"
     t.index ["court_id"], name: "index_games_on_court_id"
     t.index ["ends_on"], name: "index_games_on_ends_on"

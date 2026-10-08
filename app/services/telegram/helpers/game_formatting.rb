@@ -55,7 +55,7 @@ module Telegram
       # приглашением об этом молчим.
       def self.coach_mark(game, locale: Telegram::I18n::DEFAULT_LOCALE, with_names: false, channel: :telegram)
         return nil unless game.respond_to?(:with_coach?) && game.with_coach?
-        return nil if expected_coaches(game).empty?
+        return nil if expected_coaches(game).empty? && guest_coach_name(game).blank?
 
         names = with_names ? coach_names(game, locale: locale, channel: channel) : []
         if names.empty?
@@ -76,9 +76,15 @@ module Telegram
       # Тренера зовут так же, как игрока в списке участников, а отказавшийся
       # тренер на корт не придёт — его имени в напоминании нет.
       def self.coach_names(game, locale: Telegram::I18n::DEFAULT_LOCALE, channel: :telegram)
-        expected_coaches(game).map do |coach|
+        names = expected_coaches(game).map do |coach|
           UserLookup.display_name(coach, fallback: Telegram::I18n.t(:user_fallback, locale: locale), channel: channel)
         end
+        names + [ guest_coach_name(game) ].compact
+      end
+
+      # Гостевой тренер приглашения не получает, поэтому и отказаться не может.
+      def self.guest_coach_name(game)
+        game.guest_coach_name.presence if game.respond_to?(:guest_coach_name)
       end
 
       # План занятия в одну строку: названия блоков без описаний и минут.
