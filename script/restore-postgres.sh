@@ -28,11 +28,24 @@ fi
 : "${DATABASE_QUEUE_NAME:?DATABASE_QUEUE_NAME required}"
 : "${DATABASE_CABLE_NAME:?DATABASE_CABLE_NAME required}"
 
+for db in "${DATABASE_NAME}" "${DATABASE_CACHE_NAME}" "${DATABASE_QUEUE_NAME}" "${DATABASE_CABLE_NAME}"; do
+  if [ ! -f "${BACKUP_PATH}/${db}.dump" ]; then
+    echo "Missing dump file: ${BACKUP_PATH}/${db}.dump" >&2
+    exit 1
+  fi
+done
+
 compose() {
+  # COMPOSE_PROJECT_NAME is honored when set (e.g. disposable restore drills).
   docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
 }
 
 container_id="$(compose ps -q "${DB_SERVICE}")"
+if [ -z "${container_id}" ]; then
+  echo "Database service '${DB_SERVICE}' is not running" >&2
+  exit 1
+fi
+
 compose exec -T "${DB_SERVICE}" mkdir -p "${REMOTE_DIR}"
 docker cp "${BACKUP_PATH}/." "${container_id}:${REMOTE_DIR}/"
 
@@ -42,11 +55,19 @@ restore_one() {
   echo "Restoring ${db}..."
   compose exec -T -e PGPASSWORD="${DATABASE_PASSWORD}" "${DB_SERVICE}" bash -lc "
     set -euo pipefail
-    psql -U '${DATABASE_USERNAME}' -d postgres -v ON_ERROR_STOP=1 -c \"SELECT 1 FROM pg_database WHERE datname='${db}'\" | grep -q 1 \
+    test -f '${dump}'
+    psql -U '${DATABASE_USERNAME}' -d postgres -v ON_ERROR_STOP=1 -tAc \"SELECT 1 FROM pg_database WHERE datname='${db}'\" | grep -q 1 \
       || psql -U '${DATABASE_USERNAME}' -d postgres -v ON_ERROR_STOP=1 -c \"CREATE DATABASE ${db} OWNER ${DATABASE_USERNAME}\"
-    # Prefer clean restore; tolerate pg_restore notice exit codes.
-    pg_restore -U '${DATABASE_USERNAME}' -d '${db}' --clean --if-exists --no-owner --no-acl '${dump}' || true
-    psql -U '${DATABASE_USERNAME}' -d '${db}' -c 'SELECT current_database();' >/dev/null
+    # pg_restore exit 1 = warnings only; >1 is a hard failure.
+    set +e
+    pg_restore -U '${DATABASE_USERNAME}' -d '${db}' --clean --if-exists --no-owner --no-acl '${dump}'
+    status=\$?
+    set -e
+    if [ \"\${status}\" -gt 1 ]; then
+      echo \"pg_restore failed for ${db} with status \${status}\" >&2
+      exit \"\${status}\"
+    fi
+    psql -U '${DATABASE_USERNAME}' -d '${db}' -v ON_ERROR_STOP=1 -c 'SELECT current_database();' >/dev/null
   "
 }
 

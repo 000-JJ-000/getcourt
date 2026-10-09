@@ -25,7 +25,16 @@ module GetCourt
     # config.eager_load_paths << Rails.root.join("extras")
     config.time_zone = ENV.fetch("APP_TIME_ZONE", "Asia/Yekaterinburg")
 
-    # keep user logged in for 1 year
-    config.session_store :cookie_store, key: "_get_court_session_v2", expire_after: 1.year, domain: :all
+    # Absolute authenticated lifetime is enforced server-side (see ApplicationController).
+    # Cookie Max-Age matches that ceiling; activity may refresh the cookie but not
+    # extend authenticated_at past SESSION_ABSOLUTE_TTL.
+    config.x.session_absolute_ttl = 30.days
+    config.session_store :cookie_store,
+      key: "_get_court_session_v2",
+      expire_after: 30.days,
+      domain: :all,
+      httponly: true,
+      same_site: :lax,
+      secure: Rails.env.production?
   end
 end

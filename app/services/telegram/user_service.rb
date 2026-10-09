@@ -14,14 +14,10 @@ module Telegram
         return [ u, false ]
       end
 
-      # 2) попытка найти по username и привязать chat_id
-      if username && (u = User.find_by(telegram_username: username))
-        u.update_column(:telegram_chat_id, chat_id) unless u.telegram_chat_id == chat_id
-        update_telegram_locale(u, language_code)
-        return [ u, false ]
-      end
+      # Username alone must not bind chat_id — that allowed takeover of web
+      # accounts that only stored a telegram_username. Link via /register token.
 
-      # 3) создать минимальный аккаунт, пометить источник и сгенерировать сложный email
+      # 2) создать минимальный аккаунт, пометить источник и сгенерировать сложный email
       random_email = "tg-#{SecureRandom.hex(18)}@telegram.getcourt"
       u = nil
 
@@ -41,8 +37,7 @@ module Telegram
       [ u, true ]
     rescue ActiveRecord::RecordNotUnique => e
       Rails.logger.warn "Telegram UserService race condition: #{e.message}"
-      # попробуем вернуть существующего пользователя по chat_id
-      [ User.find_by(telegram_chat_id: chat_id) || User.find_by(telegram_username: username), false ]
+      [ User.find_by(telegram_chat_id: chat_id), false ]
     end
 
     def self.update_telegram_locale(user, language_code)

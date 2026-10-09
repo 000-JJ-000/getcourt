@@ -14,9 +14,15 @@
     <%= t("users.telegram.instructions_html", link: link_to("https://telegram.me/GetCourtBot", "https://telegram.me/GetCourtBot", class: "text-indigo-600 dark:text-indigo-400 hover:underline", target: "_blank", rel: "noopener")) %>
   </p>
 
-  <div class="p-3 bg-gray-50 border rounded dark:bg-slate-700/50 dark:border-white/10">
-    <code>/register <%= @registration_token %></code>
-  </div>
+  <% if @registration_token.present? %>
+    <div class="p-3 bg-gray-50 border rounded dark:bg-slate-700/50 dark:border-white/10">
+      <code>/register <%= @registration_token %></code>
+    </div>
+  <% elsif @user.telegram_chat_id.present? %>
+    <p class="text-sm text-gray-600 dark:text-slate-400">
+      <%= t("users.telegram.relink_hint", default: "To move Telegram to another chat, regenerate a one-time link token.") %>
+    </p>
+  <% end %>
 
   <div class="flex items-center gap-3">
     <%= link_to t("users.telegram.regenerate_token"),

@@ -196,15 +196,28 @@ en:
   sessions:
     privacy_consent_html: "I agree to the <a href='%{url}' class='text-indigo-600 dark:text-indigo-400 hover:underline' target='_blank'>Privacy Policy</a> and consent to processing my email for authentication"
     age_consent: "I confirm I am at least 16 years old"
+    email_label: "Email"
+    code_label: "Verification code"
+    submit: "Continue"
+    sign_in_title: "Sign in"
     telegram_hint:
       summary: "Did you previously sign up through Telegram?"
       body_html: "Sign in with your email as usual, then open <a href='%{account_url}' class='text-indigo-600 dark:text-indigo-400 hover:underline'>Account → Notifications</a> and send the /register command to the bot. Your games and statistics from the bot will move to this account."
-    login_code_sent_email: "Login code sent to your email"
+    login_code_sent_email: "If that address can receive mail, we sent a verification code."
+    delivery_failed: "We could not send a verification email right now. Try again shortly."
+    challenge_missing: "Start again with your email to get a new verification code."
     verify:
-      title_email: "Enter email code"
-      subtitle_email: "We sent a 4‑digit code to your email. Enter it below."
+      title_email: "Enter verification code"
+      subtitle_email: "We sent a 6-digit code to your email. Enter it below to continue."
       title_telegram: "Enter Telegram code"
-      subtitle_telegram: "We sent a 4‑digit code via Telegram for you. Enter it below."
+      subtitle_telegram: "We sent a 6-digit code via Telegram. Enter it below."
+      hint: "The code expires in 10 minutes and can only be used once."
+      submit: "Verify and continue"
+      resend_prompt: "Didn't get the code?"
+      resend: "Resend code"
+      invalid: "Invalid or expired code"
+      expired: "That code has expired. Request a new one."
+      locked: "Too many incorrect attempts. Request a new code."
   wallchart_banner:
     label: "World Cup 2026 · 104 matches · one winner"
     predict:

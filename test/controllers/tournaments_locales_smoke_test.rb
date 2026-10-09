@@ -13,7 +13,7 @@ class TournamentsLocalesSmokeTest < ActionDispatch::IntegrationTest
 
   %w[en ru es].each do |locale|
     test "tournament pages are fully translated in #{locale}" do
-      post session_url, params: { email: @organizer.email }
+      sign_in_as(@organizer.email)
       get set_locale_url(locale: locale)
 
       [

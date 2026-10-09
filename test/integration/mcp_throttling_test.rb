@@ -4,7 +4,9 @@ require "test_helper"
 # на время теста подменяем хранилище на память.
 class McpThrottlingTest < ActionDispatch::IntegrationTest
   setup do
+    @previous_enabled = Rack::Attack.enabled
     @previous_store = Rack::Attack.cache.store
+    Rack::Attack.enabled = true
     Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
     @previous_token = ENV["MCP_TOKEN"]
     ENV["MCP_TOKEN"] = "test-mcp-token"
@@ -15,6 +17,7 @@ class McpThrottlingTest < ActionDispatch::IntegrationTest
 
   teardown do
     Rack::Attack.cache.store = @previous_store
+    Rack::Attack.enabled = @previous_enabled
     @previous_token.nil? ? ENV.delete("MCP_TOKEN") : ENV["MCP_TOKEN"] = @previous_token
   end
 

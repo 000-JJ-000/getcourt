@@ -3,6 +3,13 @@
 # Ahoy exposes public, unauthenticated endpoints (/ahoy/visits, /ahoy/events)
 # when Ahoy.api is enabled. Throttle them per IP so a client can't flood the
 # database with arbitrary events. See https://github.com/ankane/ahoy#throttling
+#
+# Counters use Rails.cache (Solid Cache in production) so limits survive process
+# restarts and apply across multiple web instances — not an in-process MemoryStore.
+Rails.application.config.after_initialize do
+  Rack::Attack.cache.store = Rails.cache if defined?(Rack::Attack)
+end
+
 class Rack::Attack
   # Тело запроса читаем сами, поэтому ограничиваем: разбирать мегабайты ради
   # одного поля незачем.
@@ -70,13 +77,11 @@ class Rack::Attack
     end
   end
 
-  # Код входа четырёхзначный, живёт 15 минут, и неудачная попытка его не гасит:
-  # без лимита перебрать десять тысяч вариантов — вопрос нескольких минут, и
-  # проверка кода превращается в формальность. Лимит на почту закрывает подбор
-  # к конкретному аккаунту, лимит на адрес — веерный перебор по многим почтам.
+  # Login OTP is six digits and lives 10 minutes. Failed attempts do not consume
+  # the code, so without throttling brute force is practical. Email + IP buckets
+  # cover single-account guessing and spray across many addresses.
   #
-  # Тот же счётчик держит подтверждение владения аккаунтом перед выдачей токена:
-  # код там тот же самый.
+  # The same counters cover API-token ownership confirmation (same OTP shape).
   CODE_ACTIONS = [ %w[sessions check], %w[api_tokens confirm] ].freeze
 
   # Сравнивать путь строкой бесполезно: Rails узнаёт тот же маршрут и в
@@ -106,7 +111,21 @@ class Rack::Attack
   def self.attempt_email(request)
     email = query_email(request)
     email = body_email(request) if email.blank?
+    email = session_challenge_email(request) if email.blank?
     email.is_a?(String) ? email.strip.downcase.presence : nil
+  end
+
+  # Web OTP verify binds the challenge in the cookie session, not in params.
+  def self.session_challenge_email(request)
+    route = recognized_route(request)
+    return unless route && route[:controller] == "sessions" && route[:action] == "check"
+
+    challenge_id = request.session[:login_challenge_id]
+    return if challenge_id.blank?
+
+    EmailLoginChallenge.where(id: challenge_id).pick(:email)
+  rescue StandardError
+    nil
   end
 
   def self.query_email(request)
@@ -144,5 +163,33 @@ class Rack::Attack
 
   throttle("login_code/ip", limit: 30, period: 1.hour) do |request|
     request.ip if code_attempt?(request)
+  end
+
+  # OTP issuance (POST /sign_in): limit requests per email and IP.
+  def self.login_request?(request)
+    return false unless request.post?
+
+    route = recognized_route(request)
+    route.present? && route[:controller] == "sessions" && route[:action] == "create"
+  end
+
+  throttle("login_request/email", limit: 5, period: 15.minutes) do |request|
+    attempt_email(request) if login_request?(request)
+  end
+
+  throttle("login_request/ip", limit: 20, period: 1.hour) do |request|
+    request.ip if login_request?(request)
+  end
+
+  # Telegram WebApp auth: limit initData POSTs per IP (replay / probing noise).
+  def self.telegram_web_app_auth?(request)
+    return false unless request.post?
+
+    route = recognized_route(request)
+    route.present? && route[:controller] == "telegram_auth" && route[:action] == "create"
+  end
+
+  throttle("telegram_web_app_auth/ip", limit: 30, period: 1.hour) do |request|
+    request.ip if telegram_web_app_auth?(request)
   end
 end

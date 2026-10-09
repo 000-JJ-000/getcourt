@@ -84,7 +84,8 @@ class UsersController < ApplicationController
 
   def regenerate_token
     @user = current_user
-    @registration_token = @user.regenerate_telegram_registration_token!
+    @user.regenerate_telegram_registration_token!
+    flash[:keep_telegram_token] = true
     redirect_to notifications_account_path, notice: "Token regenerated"
   end
 
@@ -216,7 +217,15 @@ class UsersController < ApplicationController
   end
 
   def prepare_notifications_form_state
-    @registration_token = @user.ensure_telegram_registration_token!
+    if @user.telegram_chat_id.blank?
+      @registration_token = @user.ensure_telegram_registration_token!
+    elsif flash[:keep_telegram_token]
+      # Explicit regenerate while connected (re-link); show once then clear on next visit.
+      @registration_token = @user.telegram_registration_token
+    else
+      @user.clear_telegram_registration_token! if @user.telegram_registration_token.present?
+      @registration_token = nil
+    end
   end
 
   # Раньше здесь по таймзоне подбирался «какой-нибудь» город из справочника и

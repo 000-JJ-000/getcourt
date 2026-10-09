@@ -32,6 +32,7 @@ fi
 : "${DATABASE_CABLE_NAME:?DATABASE_CABLE_NAME required}"
 
 compose() {
+  # COMPOSE_PROJECT_NAME is honored when set (e.g. disposable restore drills).
   docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
 }
 
@@ -59,6 +60,17 @@ queue=${DATABASE_QUEUE_NAME}
 cable=${DATABASE_CABLE_NAME}
 format=pg_dump custom (-Fc)
 EOF
+
+# Fail if any expected dump is missing or empty.
+for db in "${DATABASE_NAME}" "${DATABASE_CACHE_NAME}" "${DATABASE_QUEUE_NAME}" "${DATABASE_CABLE_NAME}"; do
+  if [ ! -s "${OUT_DIR}/${db}.dump" ]; then
+    echo "Backup incomplete: missing or empty ${OUT_DIR}/${db}.dump" >&2
+    exit 1
+  fi
+done
+
+# Tighten permissions on sensitive dump files (best-effort on hosts without chmod).
+chmod 600 "${OUT_DIR}"/*.dump "${OUT_DIR}/MANIFEST.txt" 2>/dev/null || true
 
 echo "Backup complete: ${OUT_DIR}"
 ls -la "${OUT_DIR}"

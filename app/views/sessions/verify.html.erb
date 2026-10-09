@@ -1,21 +1,38 @@
 <% content_for :meta_robots, "noindex, nofollow" %>
 <div class="max-w-md mx-auto p-6 bg-white rounded shadow-sm dark:bg-slate-800/80 dark:shadow-none">
-  <h1 class="text-xl font-semibold mb-4"><%= t("sessions.verify.title_#{@via}") %></h1>
+  <h1 class="text-xl font-semibold mb-4"><%= t("sessions.verify.title_email") %></h1>
 
   <p class="text-sm text-gray-600 dark:text-slate-400 mb-4">
-    <%= t("sessions.verify.subtitle_#{@via}") %>
+    <%= t("sessions.verify.subtitle_email") %>
   </p>
 
-  <%= form_with url: verify_session_path, method: :post, local: true do %>
-    <%= hidden_field_tag :email, @email %>
+  <%= form_with url: verify_session_path, method: :post, local: true, data: { turbo: false } do %>
     <div class="mb-4">
       <%= label_tag :code, t("sessions.code_label"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
-      <%= text_field_tag :code, nil, autofocus: true, required: true,
-            class: "mt-1 block w-full rounded border px-3 py-2 tracking-widest uppercase dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      <%= text_field_tag :code, nil,
+            autofocus: true,
+            required: true,
+            inputmode: "numeric",
+            autocomplete: "one-time-code",
+            pattern: "[0-9]{6}",
+            maxlength: 6,
+            aria: { describedby: "login-code-hint" },
+            class: "mt-1 block w-full rounded border px-3 py-2 tracking-widest text-center text-lg dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      <p id="login-code-hint" class="mt-1 text-xs text-gray-500 dark:text-slate-400"><%= t("sessions.verify.hint") %></p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-3">
       <%= submit_tag t("sessions.verify.submit"), class: "rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700" %>
-      <%= link_to t("common.back"), new_session_path(email: @email), class: "text-sm text-gray-700 dark:text-slate-300 hover:underline" %>
+      <%= link_to t("common.back"), new_session_path, class: "text-sm text-gray-700 dark:text-slate-300 hover:underline" %>
     </div>
   <% end %>
+
+  <div class="mt-6 border-t border-gray-100 pt-4 dark:border-white/10">
+    <p class="text-sm text-gray-600 dark:text-slate-400 mb-2"><%= t("sessions.verify.resend_prompt") %></p>
+    <%= form_with url: session_path, method: :post, local: true, data: { turbo: false } do %>
+      <%= hidden_field_tag :email, @email %>
+      <%= hidden_field_tag :privacy_consent, "1" %>
+      <%= hidden_field_tag :age_consent, "1" %>
+      <%= submit_tag t("sessions.verify.resend"), class: "text-sm text-indigo-600 hover:underline dark:text-indigo-400 bg-transparent border-0 p-0 cursor-pointer" %>
+    <% end %>
+  </div>
 </div>

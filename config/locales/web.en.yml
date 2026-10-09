@@ -17,6 +17,9 @@ en:
       body: You have been signed out.
     verify:
       submit: Verify
+      hint: The code expires in 10 minutes and can only be used once.
+      resend_prompt: Didn't get the code?
+      resend: Resend code
   common:
     back: Back
     back_to_account: Back to account
@@ -523,7 +526,7 @@ en:
       verification_body: If you plan to create courts or host games, we recommend
         enabling sign-in verification (email or Telegram). This helps build trust
         and prevents abuse.
-      require_verification: Require verification for sensitive actions
+      require_verification: "Legacy preference (unused for web login — email OTP is always required)"
       verification_method: 'Verification method:'
       verification_hint: By default you sign in without a code. Enable verification
         to require a one-time code sent via your selected method.

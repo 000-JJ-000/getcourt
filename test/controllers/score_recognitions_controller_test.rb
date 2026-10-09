@@ -51,7 +51,7 @@ class ScoreRecognitionsControllerTest < ActionDispatch::IntegrationTest
   private
 
   def sign_in
-    post session_url, params: { email: "score_recognition_owner@example.com" }
+    sign_in_with_email("score_recognition_owner@example.com")
   end
 
   def upload(content_type:, size: 4)

@@ -10,13 +10,12 @@ class GamesUrgentSearchTest < ApplicationSystemTestCase
       time: "20:00"
     )
 
-    visit new_session_path
-    fill_in "Email", with: owner.email
-    click_on "Enter"
+    system_sign_in(owner)
 
     # While the search is off, the button lives in the onboarding fork next to the
     # invite form; once it is on, the item is done and the manage block takes over.
     visit game_path(game)
+
     assert_button "Announce search"
     click_on "Announce search"
 

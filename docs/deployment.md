@@ -73,11 +73,28 @@ See `.env-example` (development) and `.env.production.example` (production).
 | `RAILS_ALLOWED_HOSTS` | Optional | Extra hosts, comma-separated |
 | `SOLID_QUEUE_IN_PUMA` | Empty | Use dedicated worker |
 | `WEB_PORT` | Optional | Host port mapped to Puma (default 3000) |
+| `SMTP_ADDRESS` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` | **Required for login mail** | Passwordless OTP delivery; no hardcoded credentials |
+| `RESEND_API_KEY` | Optional | Fallback SMTP password when using Resend |
+
+### Authentication / email / sessions
+
+Web sign-in requires a one-time email code (6 digits, 10 minutes, digest stored server-side). Configure SMTP in production before expecting logins to work. If SMTP fails, users are not signed in.
+
+Authenticated sessions have an **absolute** 30-day lifetime from `sign_in` (`session[:authenticated_at]`). Cookie Max-Age is also 30 days. There is **no** separate inactivity timeout: activity may refresh the cookie, but the server rejects the session once `authenticated_at` is older than 30 days even if the browser still holds the cookie.
+
+OTP rate limits (Rack::Attack) use `Rails.cache` — Solid Cache in production — so counters are shared across web processes and survive restarts.
+
+`RESEND_API_KEY` is an intentional SMTP password fallback for Resend’s relay when `SMTP_PASSWORD` is unset. Production boot requires one of the two (except asset-precompile with `SECRET_KEY_BASE_DUMMY`).
+
+`users.require_verification` / `preferred_login_via` are legacy preferences and do **not** gate web login (email OTP is always required).
+
+Local development does **not** use SMTP: messages are written to `tmp/mails`. Production always uses `:smtp` (never `:file`).
 
 ### Secrets
 
 - Never commit `.env` / `.env.production`.
 - Rotate `SECRET_KEY_BASE` only with a planned session invalidation window.
+- Never log OTP codes in production.
 - Rotate DB passwords by updating Postgres roles, then `.env.production`, then recreate app containers.
 - Recovery: restore from encrypted off-host backups (below); keep a copy of `.env.production` in a password manager.
 
@@ -88,11 +105,15 @@ See `.env-example` (development) and `.env.production.example` (production).
 | Ports | Host/proxy → `WEB_PORT` (default 3000) on `web`. Postgres: **internal only**. |
 | HTTPS | Terminate TLS at Caddy/nginx/etc. Rails `assume_ssl` / `force_ssl` expect `X-Forwarded-Proto`. |
 | Trusted hosts | Defaults include `getcourt.co` / `*.getcourt.co`; add others via `RAILS_ALLOWED_HOSTS`. |
-| Health | Proxy may probe `/up` over HTTP to the container; HTTPS redirect is skipped for `/up`. |
+| Trusted proxies | Private/loopback CIDRs by default. Add CDN ranges via `TRUSTED_PROXIES` (comma-separated). Never trust the open Internet. |
+| Health | Proxy may probe `/up` over HTTP to the container; HTTPS redirect is skipped for `/up`. `/up` returns no secrets. |
 | WebSockets | Forward `Upgrade` / `Connection` headers to Puma for Action Cable (Solid Cable). |
-| Forwarded headers | Set `X-Forwarded-For`, `X-Forwarded-Proto`, `Host` (or `X-Forwarded-Host`) at the proxy. |
+| Forwarded headers | Set `X-Forwarded-For`, `X-Forwarded-Proto`, `Host` (or `X-Forwarded-Host`) at the **proxy you trust**. Clients must not be able to inject those headers past the proxy. |
+| Rate limits | Rack::Attack uses `request.ip` after trusted-proxy handling; misconfigured trust collapses many users into one bucket. |
 
 Do not expose Postgres or the raw app port to the public Internet without a proxy and firewall rules.
+
+Oracle Ampere / full ops steps: [runbook-oracle-arm64.md](runbook-oracle-arm64.md).
 
 ## Backup and restore
 
@@ -115,7 +136,9 @@ COMPOSE_FILE=docker-compose.fresh.yml ENV_FILE=.env.production DB_SERVICE=db_fre
   ./script/restore-postgres.sh
 ```
 
-Store `./backups` off-host and encrypted. Practice restore on a disposable volume before relying on backups.
+Store `./backups` (or `/var/backups/getcourt`) **off-host** and encrypted; mode `700` on the directory / `600` on dumps. Practice restore on a disposable volume (`docker-compose.fresh.yml`) before relying on backups.
+
+**Suggested schedule (small community):** daily automated backup; retain ≥ 7 dailies and 4 weeklies. Scripts exit nonzero if a dump is missing/empty or `pg_restore` hard-fails.
 
 ## AMD64 / ARM64 builds
 

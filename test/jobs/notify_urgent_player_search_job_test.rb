@@ -81,7 +81,8 @@ class NotifyUrgentPlayerSearchJobTest < ActiveJob::TestCase
     assert_includes calls[0][:args][1], "Теннис"
     assert_includes calls[0][:args][1], "Продвинутый"
     assert_includes calls[0][:args][1], "Center Court"
-    assert_includes calls[0][:args][1], "https://getcourt.co/games/#{game.id}"
+    host = ENV.fetch("APP_HOST", "https://getcourt.co").to_s.sub(%r{/\z}, "")
+    assert_includes calls[0][:args][1], "#{host}/games/#{game.id}"
   end
 
   test "falls back to email when telegram is selected but not connected" do

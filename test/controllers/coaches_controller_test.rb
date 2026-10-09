@@ -138,7 +138,7 @@ class CoachesControllerTest < ActionDispatch::IntegrationTest
 
   test "coaches from your city come first when no location filter is applied" do
     user_email = "coach_seeker_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     User.find_by!(email: user_email).update_column(:city_name, "Yekaterinburg")
 
     remote = User.create!(email: "aaa_remote_coach@example.com", name: "Aaa Remote Coach", coach: true, city_name: "Moscow")

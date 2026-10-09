@@ -174,12 +174,21 @@ es:
     telegram_hint:
       summary: "¿Ya te habías registrado a través de Telegram?"
       body_html: "Inicia sesión con tu email como siempre y luego abre <a href='%{account_url}' class='text-indigo-600 dark:text-indigo-400 hover:underline'>Cuenta → Notificaciones</a> y envía el comando /register al bot. Tus partidos y estadísticas del bot pasarán a esta cuenta."
-    login_code_sent_email: "Código de inicio de sesión enviado a tu email"
+    login_code_sent_email: "Si esa dirección puede recibir correo, enviamos un código de verificación."
+    delivery_failed: "No pudimos enviar el correo de verificación ahora. Inténtalo de nuevo en breve."
+    challenge_missing: "Empieza de nuevo con tu email para obtener un código nuevo."
     verify:
-      title_email: "Introduce el código del email"
-      subtitle_email: "Hemos enviado un código de 4 dígitos a tu email. Introdúcelo abajo."
+      title_email: "Introduce el código de verificación"
+      subtitle_email: "Hemos enviado un código de 6 dígitos a tu email. Introdúcelo abajo."
       title_telegram: "Introduce el código de Telegram"
-      subtitle_telegram: "Te hemos enviado un código de 4 dígitos por Telegram. Introdúcelo abajo."
+      subtitle_telegram: "Te hemos enviado un código de 6 dígitos por Telegram. Introdúcelo abajo."
+      hint: "El código caduca en 10 minutos y solo se puede usar una vez."
+      submit: "Verificar y continuar"
+      resend_prompt: "¿No recibiste el código?"
+      resend: "Reenviar código"
+      invalid: "Código inválido o caducado"
+      expired: "Ese código ha caducado. Solicita uno nuevo."
+      locked: "Demasiados intentos incorrectos. Solicita un código nuevo."
   wallchart_banner:
     label: "Mundial 2026 · 104 partidos · un ganador"
     predict:

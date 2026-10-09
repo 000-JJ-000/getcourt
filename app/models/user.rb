@@ -51,19 +51,31 @@ class User < ApplicationRecord
     TZInfo::Timezone.all_identifiers + ActiveSupport::TimeZone.all.map(&:name)
   ).uniq.freeze
 
-  # generate one-time login code and remember send time/method
+  # One-time codes for API-token confirmation / account verification.
+  # Web sign-in uses EmailLoginChallenge instead. Plaintext is never stored.
+  LOGIN_CODE_TTL = 10.minutes
+  LOGIN_CODE_DIGITS = 6
+
+  def self.digest_login_code(email, code)
+    EmailLoginChallenge.digest_code(email, code)
+  end
+
   def generate_login_code!(via: "email")
-    # 4-digit numeric one-time code (uniform 0000..9999)
-    code = format("%04d", SecureRandom.random_number(10_000))
-    update_columns(login_code: code, login_code_sent_at: Time.current, login_via: via.to_s)
+    code = format("%0#{LOGIN_CODE_DIGITS}d", SecureRandom.random_number(10**LOGIN_CODE_DIGITS))
+    update_columns(
+      login_code: self.class.digest_login_code(email, code),
+      login_code_sent_at: Time.current,
+      login_via: via.to_s
+    )
     code
   end
 
-  # valid only for X minutes
-  def valid_login_code?(code, ttl_minutes: 15)
+  def valid_login_code?(code, ttl_minutes: LOGIN_CODE_TTL / 1.minute)
     return false if login_code.blank? || login_code_sent_at.blank?
     return false if Time.current > (login_code_sent_at + ttl_minutes.minutes)
-    ActiveSupport::SecurityUtils.secure_compare(login_code.to_s, code.to_s)
+
+    digest = self.class.digest_login_code(email, code.to_s.strip)
+    ActiveSupport::SecurityUtils.secure_compare(login_code.to_s, digest)
   end
 
   def clear_login_code!
@@ -141,11 +153,12 @@ class User < ApplicationRecord
     admin == true
   end
 
-  # Обычный вход по email кода не требует, поэтому «залогинен» само по себе не
-  # значит «это его почта». Подтверждением считаем введённый код с письма или
-  # привязанный телеграм — без этого оценки кортов накрутить слишком легко.
+  # «Залогинен» само по себе не значит «это его почта». Подтверждением считаем
+  # verified email OTP или a Telegram link on an account that has an email
+  # (ghost /start rows with chat_id and no email are not verified).
   def verified?
-    email_verified_at.present? || telegram_chat_id.present?
+    return true if email_verified_at.present?
+    telegram_chat_id.present? && email.present?
   end
 
   def verify_email!
@@ -179,30 +192,29 @@ class User < ApplicationRecord
     update_column(:recent_invite_handles, [ handles ] + others.first(RECENT_INVITE_LISTS_LIMIT - 1))
   end
 
-  # ensure registration token for bot-based registration
+  # Issue a link token only when Telegram is not already connected. Connected
+  # accounts must call regenerate_* explicitly (re-link), so a leftover token
+  # cannot silently hijack an existing chat binding.
   def ensure_telegram_registration_token!
+    return nil if telegram_chat_id.present?
     return telegram_registration_token if telegram_registration_token.present?
 
-    token = SecureRandom.hex(12)
-    update_column(:telegram_registration_token, token)
-    token
+    regenerate_telegram_registration_token!
   end
 
   def clear_telegram_registration_token!
     update_column(:telegram_registration_token, nil)
   end
 
- def regenerate_telegram_registration_token!
-   loop do
-     token = SecureRandom.hex(12)
-     # уникальность (индекс уникальный, но лучше не ловить исключение)
-     unless self.class.exists?(telegram_registration_token: token)
-       update_column(:telegram_registration_token, token)
-
-       return token
-     end
-   end
- end
+  def regenerate_telegram_registration_token!
+    loop do
+      token = SecureRandom.hex(12)
+      unless self.class.exists?(telegram_registration_token: token)
+        update_column(:telegram_registration_token, token)
+        return token
+      end
+    end
+  end
 
   def notify_via_telegram(text)
     return false unless telegram_chat_id.present?

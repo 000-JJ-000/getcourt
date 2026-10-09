@@ -30,6 +30,27 @@ Rails.application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = true
 
+  # Trust only private/loopback proxies by default. Never treat arbitrary client
+  # X-Forwarded-For as authoritative. Operators behind Cloudflare (or other CDNs)
+  # must list those proxy CIDRs in TRUSTED_PROXIES (comma-separated).
+  require "ipaddr"
+  trusted = [
+    IPAddr.new("127.0.0.0/8"),
+    IPAddr.new("::1"),
+    IPAddr.new("10.0.0.0/8"),
+    IPAddr.new("172.16.0.0/12"),
+    IPAddr.new("192.168.0.0/16")
+  ]
+  ENV.fetch("TRUSTED_PROXIES", "").split(",").each do |cidr|
+    cidr = cidr.strip
+    next if cidr.blank?
+
+    trusted << IPAddr.new(cidr)
+  rescue IPAddr::InvalidAddressError
+    Rails.logger.warn("[production] Ignoring invalid TRUSTED_PROXIES entry: #{cidr}")
+  end
+  config.action_dispatch.trusted_proxies = trusted
+
   # Skip http-to-https redirect for the health check (Compose / load balancers use HTTP locally).
   config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
 
@@ -53,19 +74,28 @@ Rails.application.configure do
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
 
+  # Production must use SMTP (never :file). Password from SMTP_PASSWORD, or
+  # intentionally RESEND_API_KEY when using Resend's SMTP relay (documented).
+  # Skip hard requirement during asset precompile (SECRET_KEY_BASE_DUMMY).
+  smtp_password = ENV["SMTP_PASSWORD"].presence || ENV["RESEND_API_KEY"].presence
+  if smtp_password.blank? && ENV["SECRET_KEY_BASE_DUMMY"].blank?
+    raise "SMTP_PASSWORD or RESEND_API_KEY is required for production mail delivery"
+  end
+
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.smtp_settings = {
-    address: "smtp.resend.com",
-    port: 2587,
-    enable_starttls_auto: true,
-    user_name: "resend",
-    password: ENV["RESEND_API_KEY"],
-    authentication: :plain
+    address: ENV.fetch("SMTP_ADDRESS", "smtp.resend.com"),
+    port: ENV.fetch("SMTP_PORT", "2587").to_i,
+    enable_starttls_auto: ENV.fetch("SMTP_ENABLE_STARTTLS", "true") == "true",
+    user_name: ENV.fetch("SMTP_USERNAME", "resend"),
+    password: smtp_password,
+    authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym
   }
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "getcourt.co", protocol: "https" }
+  mailer_host = ENV.fetch("APP_HOST", "https://getcourt.co").to_s.sub(%r{\Ahttps?://}i, "")
+  config.action_mailer.default_url_options = { host: mailer_host, protocol: "https" }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

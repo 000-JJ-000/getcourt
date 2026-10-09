@@ -86,19 +86,21 @@ class Telegram::Processors::MainMenuProcessorTest < ActiveSupport::TestCase
     assert_equal "Telegram could not be connected. Please try again later.", notifications.dig(0, 0, 1)
   end
 
-  test "start stores telegram language for a new user" do
+  test "start does not create an account for an unknown chat" do
     chat_id = 98_765
     message = {
       "chat" => { "id" => chat_id },
       "from" => { "id" => chat_id, "first_name" => "Nuevo", "language_code" => "es-ES" },
       "text" => "/start"
     }
+    menu_chat_ids = []
 
-    stub_singleton(Telegram::Handlers::MenuHandler, :menu, ->(*) { }) do
+    stub_singleton(Telegram::Handlers::MenuHandler, :menu, ->(id) { menu_chat_ids << id }) do
       Telegram::Processors::MainMenuProcessor.handle_message(message)
     end
 
-    assert_equal "es", User.find_by!(telegram_chat_id: chat_id).telegram_locale
+    assert_nil User.find_by(telegram_chat_id: chat_id)
+    assert_equal [ chat_id ], menu_chat_ids
   end
 
   test "start does not overwrite an existing telegram locale" do

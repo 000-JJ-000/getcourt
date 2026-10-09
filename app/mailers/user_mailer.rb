@@ -1,10 +1,17 @@
 class UserMailer < ApplicationMailer
-  def login_code_email(user, code)
-    @user = user
+  # Accepts email string or User — web login may not have a User row yet.
+  def login_code_email(recipient, code)
     @code = code
-    locale = user.telegram_locale.presence || I18n.default_locale
+    email = recipient.is_a?(User) ? recipient.email : recipient.to_s
+    locale =
+      if recipient.is_a?(User)
+        recipient.telegram_locale.presence || recipient.locale.presence || I18n.default_locale
+      else
+        I18n.default_locale
+      end
+
     I18n.with_locale(locale) do
-      mail(to: user.email, subject: t("user_mailer.login_code_email.subject"))
+      mail(to: email, subject: t("user_mailer.login_code_email.subject"))
     end
   end
 

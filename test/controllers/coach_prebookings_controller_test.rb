@@ -12,7 +12,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
       date: Date.current
     )
     game.update!(coach_invitation_status: "accepted")
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     assert_difference -> { game.coach_prebookings.count }, 1 do
       assert_no_difference -> { game.prebookings.count } do
@@ -40,7 +40,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
     )
     game.update!(coach_invitation_status: "accepted", second_coach_invitation_status: "accepted")
     booking = game.coach_prebookings.create!(coach: first, date: game.next_date)
-    post session_url, params: { email: second.email }
+    sign_in_as(second.email)
 
     assert_no_difference -> { game.coach_prebookings.count } do
       delete game_coach_prebooking_url(game, booking)
@@ -66,7 +66,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
       assert game.prebooking_closed_on?(Date.new(2026, 9, 15))
       assert_equal [ Date.new(2026, 9, 15), Date.new(2026, 9, 22), Date.new(2026, 9, 29) ], game.prebooking_dates_in(Date.new(2026, 9, 1))
 
-      post session_url, params: { email: coach.email }
+      sign_in_as(coach.email)
       get game_path(game)
 
       assert_select "article#prebooking-2026-09-15" do
@@ -93,7 +93,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
     )
     game.update!(coach_invitation_status: "accepted")
     booking = game.coach_prebookings.create!(coach: coach, date: game.next_date)
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     assert_difference -> { game.coach_prebookings.count }, -1 do
       delete game_coach_prebooking_url(game, booking)
@@ -118,7 +118,7 @@ class CoachPrebookingsControllerTest < ActionDispatch::IntegrationTest
       )
       game.update!(coach_invitation_status: "accepted")
       game.coach_prebookings.create!(coach: coach, date: game.next_date)
-      post session_url, params: { email: coach.email }
+      sign_in_as(coach.email)
 
       get more_game_prebookings_url(game, month: "2026-09")
 

@@ -332,7 +332,7 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
 
   test "same-city court appears before other-city court for signed-in user" do
     user_email = "courts_city_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.update_column(:city_name, "Kazan")
 
@@ -352,7 +352,7 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
 
   test "city alias Ekaterinburg matches court with city_name Yekaterinburg" do
     user_email = "ekb_alias_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.update_column(:city_name, "Ekaterinburg")
 
@@ -462,7 +462,7 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
 
   test "free attribute is saved on create" do
     user_email = "free_create_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
 
     post courts_url, params: { court: { name: "My Free Court", free: "1" } }
 
@@ -475,7 +475,7 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
 
   test "outdoor and indoor attributes are saved on create" do
     user_email = "court_flags_create_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
 
     post courts_url, params: { court: { name: "My Mixed Court", outdoor: "1", indoor: "1" } }
 
@@ -493,11 +493,11 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
     owner_email = "owner_#{SecureRandom.hex(4)}@example.com"
     other_email = "other_#{SecureRandom.hex(4)}@example.com"
 
-    post session_url, params: { email: owner_email }
+    sign_in_as(owner_email)
     owner = User.find_by!(email: owner_email)
     court = Court.create!(name: "Owner Court", moderation_status: "approved", approved_at: Time.current, user: owner)
 
-    post session_url, params: { email: other_email }
+    sign_in_as(other_email)
     patch court_url(court), params: { court: { name: "Hacked Name" } }
 
     assert_response :forbidden
@@ -510,7 +510,7 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
 
   test "owner can update their court" do
     owner_email = "owner2_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: owner_email }
+    sign_in_as(owner_email)
     owner = User.find_by!(email: owner_email)
     court = Court.create!(name: "My Court", moderation_status: "approved", approved_at: Time.current, user: owner)
 
@@ -527,11 +527,11 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
     owner_email = "owner3_#{SecureRandom.hex(4)}@example.com"
     other_email = "other3_#{SecureRandom.hex(4)}@example.com"
 
-    post session_url, params: { email: owner_email }
+    sign_in_as(owner_email)
     owner = User.find_by!(email: owner_email)
     court = Court.create!(name: "Another Court", moderation_status: "approved", approved_at: Time.current, user: owner)
 
-    post session_url, params: { email: other_email }
+    sign_in_as(other_email)
     get edit_court_url(court)
 
     assert_response :forbidden
@@ -545,10 +545,10 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
     owner_email = "owner4_#{SecureRandom.hex(4)}@example.com"
     other_email = "other4_#{SecureRandom.hex(4)}@example.com"
 
-    post session_url, params: { email: other_email }
+    sign_in_as(other_email)
     other = User.find_by!(email: other_email)
 
-    post session_url, params: { email: owner_email }
+    sign_in_as(owner_email)
     owner = User.find_by!(email: owner_email)
     court = Court.create!(name: "Owned Court", moderation_status: "approved", approved_at: Time.current, user: owner)
 
@@ -566,11 +566,11 @@ class CourtsControllerTest < ActionDispatch::IntegrationTest
     owner_email = "owner5_#{SecureRandom.hex(4)}@example.com"
     admin_email = "admin5_#{SecureRandom.hex(4)}@example.com"
 
-    post session_url, params: { email: owner_email }
+    sign_in_as(owner_email)
     owner = User.find_by!(email: owner_email)
     court = Court.create!(name: "Other Court", moderation_status: "approved", approved_at: Time.current, user: owner)
 
-    post session_url, params: { email: admin_email }
+    sign_in_as(admin_email)
     User.find_by!(email: admin_email).update_column(:admin, true)
 
     patch court_url(court), params: { court: { name: "Admin Edited" } }

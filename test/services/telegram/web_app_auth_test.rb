@@ -27,6 +27,23 @@ module Telegram
       assert_nil Telegram::WebAppAuth.verify(init_data.sub("12345", "99999"), BOT_TOKEN)
     end
 
+    test "rejects future auth_date beyond skew" do
+      init_data = signed_init_data(auth_date: 10.minutes.from_now.to_i, user: { id: 12345 })
+
+      assert_nil Telegram::WebAppAuth.verify(init_data, BOT_TOKEN)
+    end
+
+    test "rejects replay of the same initData hash" do
+      previous = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      init_data = signed_init_data(auth_date: Time.now.to_i, user: { id: 12345 })
+
+      assert Telegram::WebAppAuth.verify(init_data, BOT_TOKEN)
+      assert_nil Telegram::WebAppAuth.verify(init_data, BOT_TOKEN)
+    ensure
+      Rails.cache = previous
+    end
+
     private
 
     def signed_init_data(auth_date:, user:)

@@ -10,7 +10,7 @@ class LocaleControllerTest < ActionDispatch::IntegrationTest
 
   test "stores an authenticated user's explicit locale" do
     email = "locale_preference_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: email }
+    sign_in_as(email)
     user = User.find_by!(email: email)
 
     get set_locale_url(locale: "es")

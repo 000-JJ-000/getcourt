@@ -10,7 +10,8 @@ class TelegramAuthController < ApplicationController
 
     tg_user = JSON.parse(verified["user"].to_s)
     user = User.find_by(telegram_chat_id: tg_user["id"].to_i)
-    unless user
+    # Ghost /start accounts (chat_id without email) must not receive a web session.
+    unless user&.email.present?
       render json: { error: "telegram account not connected" }, status: :not_found and return
     end
 

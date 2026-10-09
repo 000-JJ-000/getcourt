@@ -25,7 +25,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "authenticated user can save about_me" do
     user_email = "about_me_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     patch account_url, params: { section: "profile", user: { about_me: "I love tennis" } }
@@ -39,7 +39,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "authenticated user can view account subpages" do
     user_email = "account_subpages_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     [
@@ -58,7 +58,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "account page shows a statistics teaser linking to the full stats page" do
     user_email = "account_stats_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.player_statistic.update!(singles_hours: 2.5, singles_games: 1, singles_wins: 1)
 
@@ -81,7 +81,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     local_b = Court.create!(name: "Zulu Local", city_name: "Testville", moderation_status: "approved")
     other = Court.create!(name: "Alpha Away", city_name: "Awaytown", moderation_status: "approved")
 
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.update!(city_name: "Testville")
 
@@ -110,7 +110,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "authenticated session is shared across locale subdomains" do
     host! "getcourt.co"
     user_email = "shared_session_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     host! "ru.getcourt.co"
@@ -125,7 +125,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "sign out clears shared session across locale subdomains" do
     host! "getcourt.co"
     user_email = "shared_logout_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     host! "ru.getcourt.co"
@@ -142,7 +142,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "favorites mode saves favorite courts and clears court note" do
     user_email = "favorite_courts_#{SecureRandom.hex(4)}@example.com"
     court = Court.create!(name: "Favorite Court")
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.update!(court_preferences_note: "All city courts")
 
@@ -167,7 +167,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "profile update does not clear favorite courts" do
     user_email = "profile_keeps_courts_#{SecureRandom.hex(4)}@example.com"
     court = Court.create!(name: "Kept Favorite Court")
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.favorite_courts << court
 
@@ -190,7 +190,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "notifications update redirects back to notifications" do
     user_email = "notifications_redirect_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     patch account_url, params: {
@@ -208,7 +208,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "notifications page shows nearby notification channel selector" do
     user_email = "notifications_channel_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
 
     get notifications_account_url
 
@@ -230,7 +230,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "security update redirects back to security" do
     user_email = "security_redirect_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     patch account_url, params: {
@@ -247,7 +247,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "invalid profile update renders profile with unprocessable entity" do
     user_email = "invalid_profile_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     patch account_url, params: {
@@ -263,7 +263,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "regenerate token redirects to notifications" do
     user_email = "regenerate_redirect_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     post regenerate_token_account_url
@@ -275,7 +275,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "clear city redirects to profile" do
     user_email = "clear_city_redirect_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.update!(city_name: "Kurgan")
 
@@ -289,7 +289,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "account games shows past matches when user has no live games" do
     user_email = "past_matches_only_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     match = Match.create!(
       user: user,
@@ -312,7 +312,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "account games shows past matches alongside live games" do
     user_email = "past_and_live_#{SecureRandom.hex(4)}@example.com"
     court = Court.create!(name: "Match History Court")
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     game = Game.create!(user: user, court: court, date: 5.days.from_now.to_date, time: "10:00")
     old_match = Match.create!(
@@ -338,7 +338,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "account games deduplicates matches linked to live games" do
     user_email = "dedup_match_#{SecureRandom.hex(4)}@example.com"
     court = Court.create!(name: "Dedup Court")
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     game = Game.create!(user: user, court: court, date: 2.days.from_now.to_date, time: "12:00")
     linked_match = Match.create!(
@@ -372,7 +372,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "account games hides past matches section when none exist" do
     user_email = "no_history_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     get games_account_url
@@ -386,7 +386,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "note mode saves court note and clears favorite courts" do
     user_email = "court_note_#{SecureRandom.hex(4)}@example.com"
     court = Court.create!(name: "Favorite Court")
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
     user.favorite_courts << court
 
@@ -409,7 +409,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   end
   test "account page links to the training blocks library for a coach" do
     coach = User.create!(email: "coach-library-#{SecureRandom.hex(4)}@example.com", coach: true)
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     get edit_account_url
 
@@ -422,7 +422,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "account page hides the training blocks library from a player without blocks" do
     user_email = "player_library_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     user = User.find_by!(email: user_email)
 
     get edit_account_url
@@ -445,7 +445,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     )
     game.update!(coach_invitation_status: "accepted")
     game.coach_prebookings.create!(coach: coach, date: game.next_date)
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     get coach_schedule_account_url
 
@@ -467,7 +467,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
       time: "17:00"
     )
     game.update!(coach_invitation_status: "accepted")
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     get coach_schedule_account_url
 
@@ -479,7 +479,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   end
   test "a player is bounced from the coaching schedule and does not see its link" do
     player_email = "schedule_player_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: player_email }
+    sign_in_as(player_email)
     player = User.find_by!(email: player_email)
 
     get coach_schedule_account_url
@@ -493,7 +493,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "the account page links a coach to the coaching schedule" do
     coach = User.create!(email: "coach-schedule-link-#{SecureRandom.hex(4)}@example.com", coach: true)
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     get edit_account_url
 
@@ -505,7 +505,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "newcomer sees the checklist on the homepage and can close it for good" do
     newcomer = User.create!(email: "checklist-newcomer@example.com")
-    post session_url, params: { email: newcomer.email }
+    sign_in_as(newcomer.email)
 
     get root_url
     assert_response :success
@@ -525,7 +525,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     coach_email = "second_coach_schedule_#{SecureRandom.hex(4)}@example.com"
     court = Court.create!(name: "Second Coach Court")
     first = User.create!(email: "schedule_first_coach_#{SecureRandom.hex(4)}@example.com", coach: true)
-    post session_url, params: { email: coach_email }
+    sign_in_as(coach_email)
     coach = User.find_by!(email: coach_email)
     coach.update!(coach: true)
     game = Game.create!(
@@ -656,7 +656,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   # Подсказки подписаны так же, как люди везде в списках: имя и @ник в скобках.
   test "search answers with ids and display labels" do
-    post session_url, params: { email: "user-search-#{SecureRandom.hex(4)}@example.com" }
+    sign_in_with_email("user-search-#{SecureRandom.hex(4)}@example.com")
     player = User.create!(email: "user-search-player@example.com", name: "Search Me", telegram_username: "search_me_tg")
 
     get search_users_url, params: { q: "search m" }
@@ -669,7 +669,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
   def with_city_user
     email = "city_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: email }
+    sign_in_as(email)
     user = User.find_by!(email: email)
 
     cities = {

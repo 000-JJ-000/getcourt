@@ -12,7 +12,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     coach = User.create!(email: "invite-coach-#{SecureRandom.hex(4)}@example.com", name: "Coach Ivan", coach: true)
     game.update!(user: owner, with_coach: true, coach: coach)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -54,7 +54,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     target.update!(email: "invite-no-coach-target@example.com", telegram_username: "@targetuser", telegram_chat_id: 90_005, telegram_locale: "en", notification_channel: "telegram")
     game.update!(user: owner, with_coach: false)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -72,7 +72,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     target.update!(email: "invite-history-target@example.com", telegram_username: "@targetuser", telegram_chat_id: 90_004, notification_channel: "telegram")
     game.update!(user: owner)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*) { { "ok" => true } }) do
       post game_invitations_path(game), params: { usernames: "@targetuser @friend" }
@@ -93,7 +93,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     phantom = build_unvalidated_user(name: "Phantom", telegram_username: "@targetuser", notification_channel: "telegram")
     game.update!(user: owner)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -120,7 +120,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     phantom = build_unvalidated_user(name: "Phantom", telegram_username: "@targetuser", notification_channel: "telegram")
     game.update!(user: owner)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     assert_enqueued_emails 1 do
       post game_invitations_path(game), params: { usernames: "@targetuser" }
@@ -139,7 +139,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     second = build_unvalidated_user(name: "Phantom two", telegram_username: "@targetuser", notification_channel: "telegram")
     game.update!(user: owner)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     assert_no_enqueued_emails do
       post game_invitations_path(game), params: { usernames: "@targetuser" }
@@ -159,7 +159,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     twin = User.create!(email: "invite-ambiguous-twin@example.com", telegram_username: "@targetuser", telegram_chat_id: 90_012, notification_channel: "telegram")
     game.update!(user: owner)
 
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -180,7 +180,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     target.update!(email: "invite-target-forbidden@example.com")
     game.update!(user: owner)
 
-    post session_url, params: { email: target.email }
+    sign_in_as(target.email)
     post game_invitations_path(game), params: { usernames: "@targetuser" }
 
     assert_response :forbidden
@@ -193,7 +193,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
     owner.update!(email: "invite-email-owner@example.com", name: "Owner")
     target.update!(email: "invite-email-target@example.com", telegram_username: "@targetuser", notification_channel: "email", locale: "en")
     game.update!(user: owner)
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     assert_enqueued_emails 1 do
       post game_invitations_path(game), params: { usernames: "@targetuser" }
@@ -218,7 +218,7 @@ class GameInvitationsControllerTest < ActionDispatch::IntegrationTest
       owner.update!(email: "invite-#{locale}-owner@example.com")
       target.update!(email: "invite-#{locale}-target@example.com", telegram_username: "@targetuser", telegram_chat_id: chat_id, telegram_locale: locale, notification_channel: "telegram")
       game.update!(user: owner, sport: "Tennis", with_coach: true)
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       calls = []
 
       stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do

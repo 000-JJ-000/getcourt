@@ -106,7 +106,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "authenticated user can create game" do
-    post session_url, params: { email: "games_test_user@example.com" }
+    sign_in_with_email("games_test_user@example.com")
 
     assert_difference("Game.count", 1) do
       post games_url, params: {
@@ -126,7 +126,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   # Календарь формы отдаёт список отмеченных дат, а игра создаётся одна: самая
   # ранняя дата становится её датой, остальные — расписанием повторов.
   test "several dates picked in the calendar make one repeating game" do
-    post session_url, params: { email: "games_calendar_user@example.com" }
+    sign_in_with_email("games_calendar_user@example.com")
 
     assert_difference("Game.count", 1) do
       post games_url, params: {
@@ -148,7 +148,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   # «Пн и чт на этой неделе, пн и ср на следующей» — расписание, которое в дни
   # недели не укладывается: сохраняем сами отмеченные даты.
   test "an irregular set of dates is saved as the schedule of one game" do
-    post session_url, params: { email: "games_calendar_irregular_user@example.com" }
+    sign_in_with_email("games_calendar_irregular_user@example.com")
 
     assert_difference("Game.count", 1) do
       post games_url, params: {
@@ -169,7 +169,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the monthly box carries the ticked dates into the next months" do
-    post session_url, params: { email: "games_calendar_monthly_user@example.com" }
+    sign_in_with_email("games_calendar_monthly_user@example.com")
     post games_url, params: {
       game: {
         court_id: courts(:one).id,
@@ -187,7 +187,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a one-off game saved from the calendar keeps a single date" do
-    post session_url, params: { email: "games_calendar_one_off_user@example.com" }
+    sign_in_with_email("games_calendar_one_off_user@example.com")
 
     post games_url, params: {
       game: {
@@ -205,7 +205,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "editing the calendar rewrites the schedule of the same game" do
-    post session_url, params: { email: "games_calendar_edit_user@example.com" }
+    sign_in_with_email("games_calendar_edit_user@example.com")
     post games_url, params: {
       game: { court_id: courts(:one).id, dates: "2026-09-07", date: "2026-09-07", time: "18:00", recurring: "1" }
     }
@@ -228,7 +228,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     game = Game.create!(court: courts(:one), user: users(:one), coach: coach, with_coach: true, time: "18:00",
                         date: Date.new(2026, 9, 7), occurrence_dates: %w[2026-09-07], recurring_monthly: true)
     game.update!(coach_invitation_status: "accepted")
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     travel_to Time.zone.local(2026, 9, 8, 12, 0) do
       get game_url(game)
@@ -241,7 +241,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create rejects surface or environment not offered by the court" do
-    post session_url, params: { email: "games_surface_user@example.com" }
+    sign_in_with_email("games_surface_user@example.com")
     court = Court.create!(name: "Clay outdoor", surfaces: %w[clay], outdoor: true, indoor: false)
 
     assert_no_difference("Game.count") do
@@ -260,7 +260,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create accepts surface and environment offered by the court" do
-    post session_url, params: { email: "games_surface_ok_user@example.com" }
+    sign_in_with_email("games_surface_ok_user@example.com")
     court = Court.create!(name: "Clay outdoor ok", surfaces: %w[clay], outdoor: true, indoor: false)
 
     assert_difference("Game.count", 1) do
@@ -281,7 +281,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "new form shows players search option" do
-    post session_url, params: { email: "games_form_user@example.com" }
+    sign_in_with_email("games_form_user@example.com")
 
     get new_game_url
 
@@ -290,7 +290,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "new form includes hidden prebooking field" do
-    post session_url, params: { email: "games_form_hidden_prebooking@example.com" }
+    sign_in_with_email("games_form_hidden_prebooking@example.com")
 
     get new_game_url
 
@@ -300,7 +300,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "prebooking fragment includes hidden prebooking field when recurring is disabled" do
-    post session_url, params: { email: "games_fragment_hidden_prebooking@example.com" }
+    sign_in_with_email("games_fragment_hidden_prebooking@example.com")
 
     get prebooking_fragment_games_url, params: { recurring: "0" }
 
@@ -385,7 +385,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     far_game = Game.create!(court: far_court, user: users(:one), date: Date.current + 1.day, time: "10:00")
     near_game = Game.create!(court: near_court, user: users(:one), date: Date.current + 1.day, time: "11:00")
 
-    post session_url, params: { email: "testville_player@example.com" }
+    sign_in_with_email("testville_player@example.com")
     User.find_by!(email: "testville_player@example.com").update_column(:city_name, "Testville")
     get root_url
 
@@ -412,7 +412,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     past_game = Game.create!(court: court, user: users(:one), date: Date.current - 1.day, time: "10:00")
     future_game = Game.create!(court: court, user: users(:one), date: Date.current + 1.day, time: "10:00")
 
-    post session_url, params: { email: "timeville_player@example.com" }
+    sign_in_with_email("timeville_player@example.com")
     User.find_by!(email: "timeville_player@example.com").update_column(:city_name, "Timeville")
     get root_url
 
@@ -651,7 +651,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "owner can update own game" do
-    post session_url, params: { email: "owner_update@example.com" }
+    sign_in_with_email("owner_update@example.com")
     owner = User.find_by!(email: "owner_update@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00")
 
@@ -669,7 +669,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "edit form keeps a saved players count outside the 2/4 presets" do
-    post session_url, params: { email: "owner_players_six@example.com" }
+    sign_in_with_email("owner_players_six@example.com")
     owner = User.find_by!(email: "owner_players_six@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00", players_count: 6)
 
@@ -680,7 +680,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "owner can leave players count unchosen and the game page says so" do
-    post session_url, params: { email: "owner_players_blank@example.com" }
+    sign_in_with_email("owner_players_blank@example.com")
     owner = User.find_by!(email: "owner_players_blank@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00", players_count: 4)
 
@@ -695,7 +695,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "owner can save a comment and it is rendered escaped on the game page" do
-    post session_url, params: { email: "comment_owner@example.com" }
+    sign_in_with_email("comment_owner@example.com")
     owner = User.find_by!(email: "comment_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00")
 
@@ -724,7 +724,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   test "game form narrows the court list down with country and city selects" do
     london = Court.create!(name: "Queen's Club", city_name: "Greater London", moderation_status: "approved")
     new_york = Court.create!(name: "Milstein Center", city_name: "New York", moderation_status: "approved")
-    post session_url, params: { email: "court-picker-user@example.com" }
+    sign_in_with_email("court-picker-user@example.com")
 
     get new_game_url
 
@@ -744,7 +744,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   test "game form starts from the city of the player even when it is spelled differently" do
     local = Court.create!(name: "Ural Tennis", city_name: "Yekaterinburg", moderation_status: "approved")
     far = Court.create!(name: "Milstein Center", city_name: "New York", moderation_status: "approved")
-    post session_url, params: { email: "court-picker-local@example.com" }
+    sign_in_with_email("court-picker-local@example.com")
     User.find_by(email: "court-picker-local@example.com").update!(city_name: "Ekaterinburg")
 
     get new_game_url
@@ -761,7 +761,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     london = Court.create!(name: "Queen's Club", city_name: "Greater London", moderation_status: "approved")
     far = Court.create!(name: "Milstein Center", city_name: "New York", moderation_status: "approved")
     game = Game.create!(court: london, user: owner, date: Date.current + 1.day, time: "10:00")
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     get edit_game_url(game)
 
@@ -778,7 +778,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   test "game form skips the location selects when every court sits in one city" do
     only = Court.create!(name: "Queen's Club", city_name: "Greater London", moderation_status: "approved")
     Court.where.not(id: only.id).update_all(city_name: "Greater London")
-    post session_url, params: { email: "court-picker-single-city@example.com" }
+    sign_in_with_email("court-picker-single-city@example.com")
 
     get new_game_url
 
@@ -794,7 +794,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
                               moderation_status: "approved")
     elmash = Court.create!(name: "Squash Territory", city_name: "Yekaterinburg", street: "Kosmonavtov Ave 108",
                            moderation_status: "approved")
-    post session_url, params: { email: "court-picker-street@example.com" }
+    sign_in_with_email("court-picker-street@example.com")
 
     get new_game_url
 
@@ -808,7 +808,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "game form offers the comment field" do
-    post session_url, params: { email: "comment_form_user@example.com" }
+    sign_in_with_email("comment_form_user@example.com")
 
     get new_game_url
 
@@ -837,7 +837,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "owner can toggle players search on and off" do
-    post session_url, params: { email: "owner_urgent_toggle@example.com" }
+    sign_in_with_email("owner_urgent_toggle@example.com")
     owner = User.find_by!(email: "owner_urgent_toggle@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00")
 
@@ -853,7 +853,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "players search stays off and explains itself while the court is unchosen" do
-    post session_url, params: { email: "owner_urgent_no_court@example.com" }
+    sign_in_with_email("owner_urgent_no_court@example.com")
     owner = User.find_by!(email: "owner_urgent_no_court@example.com")
     game = Game.create!(user: owner, date: Date.current + 2.days, time: "10:00")
 
@@ -868,7 +868,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     owner = User.create!(email: "owner_forbidden_urgent@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00")
 
-    post session_url, params: { email: "stranger_forbidden_urgent@example.com" }
+    sign_in_with_email("stranger_forbidden_urgent@example.com")
     post toggle_urgent_player_search_game_url(game)
 
     assert_response :forbidden
@@ -878,7 +878,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   test "owner sees onboarding checklist with the correct actions" do
     owner = User.create!(email: "onboarding_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00", players_count: 4)
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     get game_url(game)
 
@@ -896,7 +896,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   test "player search onboarding item also offers inviting players by telegram username" do
     owner = User.create!(email: "onboarding_invite_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00", players_count: 4)
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     get game_url(game)
 
@@ -920,7 +920,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       urgent_player_search: true
     )
     game.participations.create!(user: owner, status: "approved")
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     get game_url(game)
 
@@ -934,7 +934,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     full_game = Game.create!(court: courts(:one), user: owner, date: Date.current + 2.days, time: "10:00", players_count: 1)
     full_game.participations.create!(user: participant, status: "approved")
     past_game = Game.create!(court: courts(:one), user: owner, date: Date.current - 1.day, time: "10:00", players_count: 4)
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     get game_url(full_game)
     assert_response :success
@@ -965,7 +965,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, owner.email
 
     other_user = User.create!(email: "organizer_contact_other@example.com")
-    post session_url, params: { email: other_user.email }
+    sign_in_as(other_user.email)
     get game_url(game)
     assert_response :success
     assert_select '[data-testid="game-organizer-admin"]', 0
@@ -973,14 +973,14 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, owner.email
 
     delete sign_out_url
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
     get game_url(game)
     assert_response :success
     assert_select '[data-testid="game-organizer-admin"]', 0
 
     delete sign_out_url
     admin = User.create!(email: "organizer_contact_admin@example.com", admin: true)
-    post session_url, params: { email: admin.email }
+    sign_in_as(admin.email)
     get game_url(game)
     assert_response :success
     assert_select '[data-testid="game-organizer-admin"]', 1
@@ -996,7 +996,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       telegram_chat_id: 91_001,
       notification_channel: "telegram"
     )
-    post session_url, params: { email: "coach-game-owner@example.com" }
+    sign_in_with_email("coach-game-owner@example.com")
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -1022,7 +1022,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
 
   test "guest coach name is saved and shown on the game page" do
     owner = User.create!(email: "guest-coach-owner@example.com")
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     post games_url, params: {
       game: { court_id: courts(:one).id, date: Date.current + 1.day, time: "18:00", with_coach: "1", guest_coach_name: "Иван" }
@@ -1051,7 +1051,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       recurring: true,
       date: Date.current
     )
-    post session_url, params: { email: coach.email }
+    sign_in_as(coach.email)
 
     post accept_coach_invitation_game_url(game)
 
@@ -1066,7 +1066,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
                          telegram_chat_id: 91_002, notification_channel: "telegram")
     second = User.create!(email: "training-second-coach@example.com", name: "Second", coach: true,
                           telegram_chat_id: 91_003, notification_channel: "telegram")
-    post session_url, params: { email: "training-owner@example.com" }
+    sign_in_with_email("training-owner@example.com")
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -1106,7 +1106,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       recurring: true,
       date: Date.current
     )
-    post session_url, params: { email: second.email }
+    sign_in_as(second.email)
 
     get game_url(game)
     assert_response :success
@@ -1136,7 +1136,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       date: Date.current + 1.day,
       time: "18:00"
     )
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     patch game_url(game), params: {
       game: { court_id: courts(:one).id, date: game.date, time: "18:00", kind: "game", with_coach: "0" }
@@ -1154,7 +1154,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the game form offers the training kind with two coach slots" do
-    post session_url, params: { email: "kind-form-user@example.com" }
+    sign_in_with_email("kind-form-user@example.com")
 
     get new_game_url
 
@@ -1182,7 +1182,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       time: "18:00"
     )
     game.update!(coach_invitation_status: "accepted", second_coach_invitation_status: "accepted")
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -1228,7 +1228,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
       time: "18:00"
     )
     game.update!(coach_invitation_status: "accepted", second_coach_invitation_status: "accepted")
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
     calls = []
     stub_singleton(Telegram::Api, :send_with_buttons, ->(*args) { calls << args; { "ok" => true } }) do
@@ -1257,7 +1257,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "creating a training saves the picked blocks and adds the new one to the library" do
-    post session_url, params: { email: "plan-owner@example.com" }
+    sign_in_with_email("plan-owner@example.com")
     owner = User.find_by!(email: "plan-owner@example.com")
     owner.update!(coach: true)
     warmup = owner.training_blocks.create!(title: "Разминка")
@@ -1287,7 +1287,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   # Видео к упражнению добавляют прямо из формы игры, а на странице игры оно
   # показывается ссылкой с именем хостера.
   test "a new block from the game form keeps its video and the game page links to it" do
-    post session_url, params: { email: "plan-video-owner@example.com" }
+    sign_in_with_email("plan-video-owner@example.com")
     owner = User.find_by!(email: "plan-video-owner@example.com")
 
     post games_url, params: {
@@ -1313,7 +1313,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a new block with a link to a non-video site is rejected with the form re-rendered" do
-    post session_url, params: { email: "plan-video-bad-owner@example.com" }
+    sign_in_with_email("plan-video-bad-owner@example.com")
 
     assert_no_difference("Game.count") do
       post games_url, params: {
@@ -1333,7 +1333,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a block from someone else's library never lands in the plan" do
-    post session_url, params: { email: "plan-stranger-owner@example.com" }
+    sign_in_with_email("plan-stranger-owner@example.com")
     owner = User.find_by!(email: "plan-stranger-owner@example.com")
     stranger = User.create!(email: "plan-stranger@example.com", coach: true)
     foreign_block = stranger.training_blocks.create!(title: "Чужой блок")
@@ -1359,7 +1359,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the training constructor lists the blocks of the assigned coach" do
-    post session_url, params: { email: "plan-form-owner@example.com" }
+    sign_in_with_email("plan-form-owner@example.com")
     owner = User.find_by!(email: "plan-form-owner@example.com")
     coach = User.create!(email: "plan-form-coach@example.com", name: "Coach", coach: true)
     block = coach.training_blocks.create!(title: "Работа у сетки")
@@ -1380,7 +1380,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "switching a training back to a game clears its plan" do
-    post session_url, params: { email: "plan-switch-owner@example.com" }
+    sign_in_with_email("plan-switch-owner@example.com")
     owner = User.find_by!(email: "plan-switch-owner@example.com")
     owner.update!(coach: true)
     block = owner.training_blocks.create!(title: "Разминка")
@@ -1406,7 +1406,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the game page lists the training plan in the picked order" do
-    post session_url, params: { email: "plan-show-owner@example.com" }
+    sign_in_with_email("plan-show-owner@example.com")
     owner = User.find_by!(email: "plan-show-owner@example.com")
     owner.update!(coach: true)
     warmup = owner.training_blocks.create!(title: "Разминка", duration_minutes: 10)
@@ -1425,7 +1425,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a block with a court diagram shows it on the game page" do
-    post session_url, params: { email: "plan-diagram-owner@example.com" }
+    sign_in_with_email("plan-diagram-owner@example.com")
     owner = User.find_by!(email: "plan-diagram-owner@example.com")
     owner.update!(coach: true)
     block = owner.training_blocks.create!(
@@ -1445,7 +1445,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "an invalid inline block stops the save and comes back filled in" do
-    post session_url, params: { email: "plan-invalid-owner@example.com" }
+    sign_in_with_email("plan-invalid-owner@example.com")
     owner = User.find_by!(email: "plan-invalid-owner@example.com")
 
     assert_no_difference [ -> { Game.count }, -> { TrainingBlock.count } ] do
@@ -1470,7 +1470,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "an empty inline row is not treated as a block" do
-    post session_url, params: { email: "plan-empty-row-owner@example.com" }
+    sign_in_with_email("plan-empty-row-owner@example.com")
     owner = User.find_by!(email: "plan-empty-row-owner@example.com")
 
     post games_url, params: {
@@ -1494,7 +1494,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "two inline rows with one title become a single block" do
-    post session_url, params: { email: "plan-dup-owner@example.com" }
+    sign_in_with_email("plan-dup-owner@example.com")
     owner = User.find_by!(email: "plan-dup-owner@example.com")
 
     post games_url, params: {
@@ -1522,7 +1522,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the library fragment answers with the blocks of the picked coaches" do
-    post session_url, params: { email: "fragment-owner@example.com" }
+    sign_in_with_email("fragment-owner@example.com")
     owner = User.find_by!(email: "fragment-owner@example.com")
     coach = User.create!(email: "fragment-coach@example.com", coach: true)
     stranger = User.create!(email: "fragment-stranger@example.com", coach: true)
@@ -1541,7 +1541,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the library lists the blocks of the plan first and in its order" do
-    post session_url, params: { email: "plan-order-form-owner@example.com" }
+    sign_in_with_email("plan-order-form-owner@example.com")
     owner = User.find_by!(email: "plan-order-form-owner@example.com")
     owner.update!(coach: true)
     # По алфавиту это «Заминка, Подача, Разминка» — план должен победить.
@@ -1562,7 +1562,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a shared block joins the plan even when no coach is picked" do
-    post session_url, params: { email: "plan-shared-owner@example.com" }
+    sign_in_with_email("plan-shared-owner@example.com")
     owner = User.find_by!(email: "plan-shared-owner@example.com")
     stranger = User.create!(email: "plan-shared-author@example.com", coach: true)
     shared_block = stranger.training_blocks.create!(title: "Общая разминка", shared: true)
@@ -1593,7 +1593,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a new block from the game form can be sent to the shared library" do
-    post session_url, params: { email: "plan-share-new@example.com" }
+    sign_in_with_email("plan-share-new@example.com")
     owner = User.find_by!(email: "plan-share-new@example.com")
     owner.update!(coach: true)
 
@@ -1619,7 +1619,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a block that stopped being shared stays in the plan it is already in" do
-    post session_url, params: { email: "plan-unshared-owner@example.com" }
+    sign_in_with_email("plan-unshared-owner@example.com")
     owner = User.find_by!(email: "plan-unshared-owner@example.com")
     stranger = User.create!(email: "plan-unshared-author@example.com", coach: true)
     shared_block = stranger.training_blocks.create!(title: "Общая разминка", shared: true)
@@ -1646,7 +1646,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the library fragment keeps the blocks of the edited plan when the coach changes" do
-    post session_url, params: { email: "fragment-plan-owner@example.com" }
+    sign_in_with_email("fragment-plan-owner@example.com")
     owner = User.find_by!(email: "fragment-plan-owner@example.com")
     coach = User.create!(email: "fragment-plan-coach@example.com", name: "Coach", coach: true)
     block = coach.training_blocks.create!(title: "Работа у сетки")
@@ -1666,7 +1666,7 @@ class GamesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the library fragment ignores the plan of someone else's game" do
-    post session_url, params: { email: "fragment-thief@example.com" }
+    sign_in_with_email("fragment-thief@example.com")
     thief = User.find_by!(email: "fragment-thief@example.com")
     stranger = User.create!(email: "fragment-victim@example.com", coach: true)
     block = stranger.training_blocks.create!(title: "Чужой блок")

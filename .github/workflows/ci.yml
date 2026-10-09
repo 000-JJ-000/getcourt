@@ -5,6 +5,10 @@ on:
   push:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   scan_ruby:
     runs-on: ubuntu-latest
@@ -191,3 +195,82 @@ jobs:
           label: rails
           message: "${{ steps.rails.outputs.version }}"
           color: D30001
+
+  compose_validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate development Compose file
+        run: docker compose -f docker-compose.yml config --quiet
+
+      - name: Validate production Compose file
+        env:
+          SECRET_KEY_BASE: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+          APP_HOST: https://example.com
+          DATABASE_USERNAME: getcourt
+          DATABASE_PASSWORD: ci-not-a-real-secret
+          DATABASE_NAME: getcourt_production
+          DATABASE_CACHE_NAME: getcourt_production_cache
+          DATABASE_QUEUE_NAME: getcourt_production_queue
+          DATABASE_CABLE_NAME: getcourt_production_cable
+          SMTP_PASSWORD: ci-smtp-password
+        run: |
+          printf '%s\n' \
+            "SECRET_KEY_BASE=${SECRET_KEY_BASE}" \
+            "APP_HOST=${APP_HOST}" \
+            "DATABASE_USERNAME=${DATABASE_USERNAME}" \
+            "DATABASE_PASSWORD=${DATABASE_PASSWORD}" \
+            "DATABASE_NAME=${DATABASE_NAME}" \
+            "DATABASE_CACHE_NAME=${DATABASE_CACHE_NAME}" \
+            "DATABASE_QUEUE_NAME=${DATABASE_QUEUE_NAME}" \
+            "DATABASE_CABLE_NAME=${DATABASE_CABLE_NAME}" \
+            "SMTP_PASSWORD=${SMTP_PASSWORD}" \
+            > .env.production.ci
+          docker compose -f docker-compose.prod.yml --env-file .env.production.ci config --quiet
+          docker compose -f docker-compose.fresh.yml --env-file .env.production.ci config --quiet
+
+  docker_build_amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production runtime image (linux/amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: getcourt:ci-amd64
+          cache-from: type=gha,scope=runtime-amd64
+          cache-to: type=gha,mode=max,scope=runtime-amd64
+
+  docker_build_arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production runtime image (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          platforms: linux/arm64
+          push: false
+          tags: getcourt:ci-arm64
+          cache-from: type=gha,scope=runtime-arm64
+          cache-to: type=gha,mode=max,scope=runtime-arm64

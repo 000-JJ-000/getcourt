@@ -2,7 +2,7 @@ require "test_helper"
 
 class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   test "game show renders localized guest label in stats form" do
-    post session_url, params: { email: "stats_guest_form_owner@example.com" }
+    sign_in_with_email("stats_guest_form_owner@example.com")
     owner = User.find_by!(email: "stats_guest_form_owner@example.com")
 
     User.create!(name: "Addable Player", email: "stats_guest_form_addable@example.com")
@@ -25,7 +25,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   # Игрока добавляют через поле с подсказками, а не select со всеми людьми:
   # список некуда листать, и в страницу он больше не попадает.
   test "game show adds players to a match through the user picker" do
-    post session_url, params: { email: "stats_picker_owner@example.com" }
+    sign_in_with_email("stats_picker_owner@example.com")
     owner = User.find_by!(email: "stats_picker_owner@example.com")
     User.create!(name: "Addable Picker Player", email: "stats_picker_addable@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.yesterday, time: "10:00", with_coach: false)
@@ -41,7 +41,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "game show renders saved guest as stats checkbox" do
-    post session_url, params: { email: "stats_saved_guest_owner@example.com" }
+    sign_in_with_email("stats_saved_guest_owner@example.com")
     owner = User.find_by!(email: "stats_saved_guest_owner@example.com")
     game = Game.create!(
       court: courts(:one),
@@ -61,7 +61,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "game show prefills saved hours in stats form" do
-    post session_url, params: { email: "stats_hours_owner@example.com" }
+    sign_in_with_email("stats_hours_owner@example.com")
     owner = User.find_by!(email: "stats_hours_owner@example.com")
     participant = User.create!(email: "stats_hours_participant@example.com")
 
@@ -87,7 +87,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert increments games even when stats entry already exists for normal game" do
-    post session_url, params: { email: "stats_owner@example.com" }
+    sign_in_with_email("stats_owner@example.com")
     owner = User.find_by!(email: "stats_owner@example.com")
     participant = User.create!(email: "stats_participant@example.com")
 
@@ -130,7 +130,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert recalculates doubles elo for all participants" do
-    post session_url, params: { email: "stats_owner_doubles@example.com" }
+    sign_in_with_email("stats_owner_doubles@example.com")
     owner = User.find_by!(email: "stats_owner_doubles@example.com")
     partner = User.create!(email: "stats_partner_doubles@example.com")
     opponent_one = User.create!(email: "stats_opponent_one_doubles@example.com")
@@ -167,7 +167,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert records singles match against guest without elo" do
-    post session_url, params: { email: "stats_guest_owner@example.com" }
+    sign_in_with_email("stats_guest_owner@example.com")
     owner = User.find_by!(email: "stats_guest_owner@example.com")
 
     game = Game.create!(
@@ -200,7 +200,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert merges guest name checkboxes with text field" do
-    post session_url, params: { email: "stats_guest_checkbox_owner@example.com" }
+    sign_in_with_email("stats_guest_checkbox_owner@example.com")
     owner = User.find_by!(email: "stats_guest_checkbox_owner@example.com")
 
     game = Game.create!(
@@ -232,7 +232,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert refuses a lopsided match instead of recording it" do
-    post session_url, params: { email: "stats_lopsided_owner@example.com" }
+    sign_in_with_email("stats_lopsided_owner@example.com")
     owner = User.find_by!(email: "stats_lopsided_owner@example.com")
     partner = User.create!(email: "stats_lopsided_partner@example.com", name: "Lopsided Partner")
     rival = User.create!(email: "stats_lopsided_rival@example.com", name: "Lopsided Rival")
@@ -257,7 +257,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert records match for registered non-participant" do
-    post session_url, params: { email: "stats_non_participant_owner@example.com" }
+    sign_in_with_email("stats_non_participant_owner@example.com")
     owner = User.find_by!(email: "stats_non_participant_owner@example.com")
     outsider = User.create!(name: "Outsider", email: "stats_non_participant_outsider@example.com")
 
@@ -290,7 +290,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert drops non-existent user ids" do
-    post session_url, params: { email: "stats_nonexistent_owner@example.com" }
+    sign_in_with_email("stats_nonexistent_owner@example.com")
     owner = User.find_by!(email: "stats_nonexistent_owner@example.com")
 
     game = Game.create!(
@@ -318,7 +318,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert skips match when both teams are guests" do
-    post session_url, params: { email: "stats_all_guest_owner@example.com" }
+    sign_in_with_email("stats_all_guest_owner@example.com")
     owner = User.find_by!(email: "stats_all_guest_owner@example.com")
 
     game = Game.create!(
@@ -346,7 +346,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert records doubles match with guest without elo" do
-    post session_url, params: { email: "stats_guest_doubles_owner@example.com" }
+    sign_in_with_email("stats_guest_doubles_owner@example.com")
     owner = User.find_by!(email: "stats_guest_doubles_owner@example.com")
     partner = User.create!(email: "stats_guest_doubles_partner@example.com")
     opponent = User.create!(email: "stats_guest_doubles_opponent@example.com")
@@ -422,7 +422,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "game show prefills saved match into the stats form" do
-    post session_url, params: { email: "stats_prefill_owner@example.com" }
+    sign_in_with_email("stats_prefill_owner@example.com")
     owner = User.find_by!(email: "stats_prefill_owner@example.com")
     participant = User.create!(email: "stats_prefill_participant@example.com", name: "Prefill Participant")
     game = Game.create!(court: courts(:one), user: owner, date: Date.yesterday, time: "10:00", with_coach: false)
@@ -448,7 +448,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "game show prefills saved match for a recurring game in the current cycle" do
-    post session_url, params: { email: "stats_recurring_owner@example.com" }
+    sign_in_with_email("stats_recurring_owner@example.com")
     owner = User.find_by!(email: "stats_recurring_owner@example.com")
     participant = User.create!(email: "stats_recurring_participant@example.com", name: "Recurring Participant")
     game = Game.create!(court: courts(:one), user: owner, date: Date.current - 14.days, time: "10:00", recurring: true, with_coach: false)
@@ -476,7 +476,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "score upsert with group_id updates the match instead of duplicating it" do
-    post session_url, params: { email: "stats_edit_owner@example.com" }
+    sign_in_with_email("stats_edit_owner@example.com")
     owner = User.find_by!(email: "stats_edit_owner@example.com")
     participant = User.create!(email: "stats_edit_participant@example.com", name: "Edit Participant")
     game = Game.create!(court: courts(:one), user: owner, date: Date.yesterday, time: "10:00", with_coach: false)
@@ -517,7 +517,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a training form asks for hours only" do
-    post session_url, params: { email: "training-stats-owner@example.com" }
+    sign_in_with_email("training-stats-owner@example.com")
     owner = User.find_by!(email: "training-stats-owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.yesterday, time: "10:00", kind: "training")
 
@@ -529,7 +529,7 @@ class PlayerStatisticsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a training saves hours and ignores a submitted score" do
-    post session_url, params: { email: "training-score-owner@example.com" }
+    sign_in_with_email("training-score-owner@example.com")
     owner = User.find_by!(email: "training-score-owner@example.com")
     opponent = User.create!(email: "training-score-opponent@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.yesterday, time: "10:00", kind: "training")

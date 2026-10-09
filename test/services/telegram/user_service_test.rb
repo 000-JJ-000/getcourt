@@ -43,4 +43,21 @@ class Telegram::UserServiceTest < ActiveSupport::TestCase
 
     assert_equal "es", user.reload.telegram_locale
   end
+
+  test "does not bind chat_id from telegram_username alone" do
+    victim = User.create!(email: "username-victim@example.com", telegram_username: "claimed_handle")
+
+    user, created = Telegram::UserService.find_or_create_for_chat(
+      { "id" => 76_599, "username" => "claimed_handle", "first_name" => "Attacker" },
+      language_code: "en"
+    )
+
+    assert created
+    refute_equal victim.id, user.id
+    assert_nil victim.reload.telegram_chat_id
+    assert_equal 76_599, user.telegram_chat_id.to_i
+  ensure
+    victim&.destroy
+    user&.destroy
+  end
 end

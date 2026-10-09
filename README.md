@@ -58,7 +58,8 @@ curl -fsS http://127.0.0.1:3000/up
 
 Four logical databases live on one Postgres server: primary (PostGIS), cache, queue, and cable.
 
-Full ops guide (secrets, reverse proxy, backups, AMD64/ARM64 builds): [docs/deployment.md](docs/deployment.md).
+Full ops guide (secrets, reverse proxy, backups, AMD64/ARM64 builds): [docs/deployment.md](docs/deployment.md).  
+Oracle Ampere A1 runbook + native smoke: [docs/runbook-oracle-arm64.md](docs/runbook-oracle-arm64.md), `script/arm64-smoke.sh`.
 
 ## Public API and MCP
 
@@ -72,6 +73,21 @@ Upcoming games are readable from outside the app in two ways:
 Both are read-only and expose only what a game page already shows in public. See
 [docs/api-and-mcp.md](docs/api-and-mcp.md) for parameters, examples and limits, or the same
 documentation for users at [getcourt.co/api-and-mcp](https://getcourt.co/api-and-mcp).
+
+## Authentication
+
+Sign-in is passwordless email OTP (no passwords, no OAuth in this flow):
+
+1. Enter email on `/sign_in`
+2. Receive a 6-digit code (10-minute TTL; digest-only storage)
+3. Submit the code on `/sign_in/verify`
+4. Session is established only after a successful verify (absolute 30-day lifetime from sign-in)
+
+**Development:** Action Mailer writes messages under `tmp/mails` (see `config/environments/development.rb`). Open the latest file to copy the code. System tests need the `development` Docker image (includes Chromium).
+
+**Production:** Configure SMTP with `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` (see `.env.production.example`). `RESEND_API_KEY` may substitute for `SMTP_PASSWORD` when using Resend SMTP. Delivery failures do not authenticate the user. Production never uses file-based delivery.
+
+Telegram WebApp auth remains a separate path for the bot mini-app (signed `initData`, short TTL, replay cache).
 
 ## Tests and coverage
 

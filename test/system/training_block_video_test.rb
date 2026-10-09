@@ -7,9 +7,7 @@ class TrainingBlockVideoTest < ApplicationSystemTestCase
   test "a coach adds a video link without a scheme to a library block" do
     coach = User.create!(email: "system-video-coach@example.com", coach: true)
 
-    visit new_session_path
-    fill_in "Email", with: coach.email
-    click_on "Enter"
+    system_sign_in(coach)
 
     visit training_blocks_path
     assert_selector "input[name='training_block[video_url]'][type='text'][inputmode='url']"

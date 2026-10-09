@@ -2,7 +2,7 @@ require "test_helper"
 
 class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   test "owner creates guest participation" do
-    post session_url, params: { email: "guest_owner@example.com" }
+    sign_in_with_email("guest_owner@example.com")
     owner = User.find_by!(email: "guest_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
 
@@ -20,7 +20,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   test "non owner cannot create guest participation" do
     owner = User.create!(email: "guest_non_owner_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
-    post session_url, params: { email: "guest_non_owner@example.com" }
+    sign_in_with_email("guest_non_owner@example.com")
 
     assert_no_difference("Participation.count") do
       post create_guest_game_participations_url(game), params: { guest_name: "Alex Guest" }
@@ -30,7 +30,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "blank guest name redirects with alert" do
-    post session_url, params: { email: "guest_blank_owner@example.com" }
+    sign_in_with_email("guest_blank_owner@example.com")
     owner = User.find_by!(email: "guest_blank_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
 
@@ -43,7 +43,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "owner adds a registered user to the lineup and the user is notified" do
-    post session_url, params: { email: "add_user_owner@example.com" }
+    sign_in_with_email("add_user_owner@example.com")
     owner = User.find_by!(email: "add_user_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
     player = User.create!(email: "add_user_player@example.com")
@@ -60,7 +60,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "adding a user who is already in the lineup redirects with alert" do
-    post session_url, params: { email: "add_user_dup_owner@example.com" }
+    sign_in_with_email("add_user_dup_owner@example.com")
     owner = User.find_by!(email: "add_user_dup_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
     player = User.create!(email: "add_user_dup_player@example.com", name: "Dup Player")
@@ -78,7 +78,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
     owner = User.create!(email: "add_user_other_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
     player = User.create!(email: "add_user_other_player@example.com")
-    post session_url, params: { email: "add_user_stranger@example.com" }
+    sign_in_with_email("add_user_stranger@example.com")
 
     assert_no_difference("Participation.count") do
       post add_user_game_participations_url(game), params: { user_id: player.id }
@@ -88,7 +88,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "owner removes guest participation" do
-    post session_url, params: { email: "guest_destroy_owner@example.com" }
+    sign_in_with_email("guest_destroy_owner@example.com")
     owner = User.find_by!(email: "guest_destroy_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
     participation = Participation.create!(game: game, guest_name: "Alex Guest", status: "approved")
@@ -104,7 +104,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
     owner = User.create!(email: "guest_destroy_stranger_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
     participation = Participation.create!(game: game, guest_name: "Alex Guest", status: "approved")
-    post session_url, params: { email: "guest_destroy_stranger@example.com" }
+    sign_in_with_email("guest_destroy_stranger@example.com")
 
     assert_no_difference("Participation.count") do
       delete game_participation_url(game, participation)
@@ -116,7 +116,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   # Removing someone from your own game is your own action — you should not get
   # a notification about it. The guest branches above already guard against this.
   test "owner is not notified about a participant they removed themselves" do
-    post session_url, params: { email: "removal_owner@example.com" }
+    sign_in_with_email("removal_owner@example.com")
     owner = User.find_by!(email: "removal_owner@example.com")
     player = User.create!(email: "removal_player@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
@@ -132,7 +132,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
   test "owner is notified when a participant leaves on their own" do
     owner = User.create!(email: "leave_owner@example.com")
     game = Game.create!(court: courts(:one), user: owner, date: Date.tomorrow, time: "10:00")
-    post session_url, params: { email: "leave_player@example.com" }
+    sign_in_with_email("leave_player@example.com")
     player = User.find_by!(email: "leave_player@example.com")
     participation = Participation.create!(game: game, user: player, status: "approved")
 
@@ -147,7 +147,7 @@ class ParticipationsControllerTest < ActionDispatch::IntegrationTest
     player = User.create!(email: "admin_removal_player@example.com")
     participation = Participation.create!(game: game, user: player, status: "approved")
 
-    post session_url, params: { email: "admin_removal_admin@example.com" }
+    sign_in_with_email("admin_removal_admin@example.com")
     User.find_by!(email: "admin_removal_admin@example.com").update!(admin: true)
 
     assert_enqueued_emails 1 do

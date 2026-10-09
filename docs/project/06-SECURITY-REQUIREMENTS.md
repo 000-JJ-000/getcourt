@@ -1,6 +1,6 @@
 # Security Requirements and Launch Blockers
-## Verified source-level concern
-Upstream `app/controllers/sessions_controller.rb` conditionally calls `sign_in(user)` when `user.require_verification?` is false, after looking up or creating the account by email. The `check` action also permits sign-in without a valid code in that case. Treat as **potential authentication bypass** pending full-flow verification. **Do not expose the fork publicly until fixed and regression-tested.**
+## Verified source-level concern (remediated in P0-04)
+Previously `SessionsController` signed users in when `require_verification` was false (email-only bypass). **P0-04** replaced this with passwordless email OTP: `EmailLoginChallenge` + `Sessions::EmailLogin`, digest-only codes, 10-minute TTL, session-bound challenges, rate limits, session rotation, and absolute 30-day session lifetime. `require_verification` no longer affects web login. Telegram WebApp auth validates HMAC `initData`, enforces freshness + replay cache, and rotates the session. Do not expose publicly until regression tests for this milestone pass in CI.
 
 ## Mandatory controls
 - Every login requires proven ownership: password hash, valid expiring single-use code, or verified Google/Apple provider assertion.

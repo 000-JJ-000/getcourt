@@ -22,7 +22,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
     stale = game.prebookings.create!(date: Date.new(2026, 9, 14), slot_index: 1)
 
     users(:two).update!(email: "outside-schedule@example.com")
-    post session_url, params: { email: users(:two).email }
+    sign_in_as(users(:two).email)
     post book_game_prebooking_url(game, stale)
 
     assert_response :forbidden
@@ -37,7 +37,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
     game.mark_participations_reset!(Date.new(2026, 9, 14))
 
     users(:two).update!(email: "roster-assembled@example.com")
-    post session_url, params: { email: users(:two).email }
+    sign_in_as(users(:two).email)
     travel_to Time.zone.local(2026, 9, 12, 12, 0) do
       post book_game_prebooking_url(game, slot)
     end
@@ -54,7 +54,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
     game.mark_participations_reset!(Date.new(2026, 9, 14))
 
     users(:one).update!(email: "roster-approve@example.com")
-    post session_url, params: { email: users(:one).email }
+    sign_in_as(users(:one).email)
     assert_no_enqueued_emails do
       post approve_game_prebooking_url(game, request)
     end
@@ -72,7 +72,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
     travel_to SEPTEMBER do
       game = recurring_prebooking_game(users(:one))
       users(:two).update!(email: "expanded-prebooking@example.com")
-      post session_url, params: { email: users(:two).email }
+      sign_in_as(users(:two).email)
 
       # Четыре октябрьских понедельника по два слота.
       assert_difference -> { game.prebookings.count }, 8 do
@@ -91,7 +91,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       owner.update!(email: "prebooking-calendar@example.com", name: "Calendar Owner")
       game = recurring_prebooking_game(owner)
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       get more_game_prebookings_url(game, month: "2026-09")
 
       assert_response :success
@@ -113,7 +113,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       owner.update!(email: "prebooking-grid@example.com")
       game = recurring_prebooking_game(owner)
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       get more_game_prebookings_url(game, month: "2026-09")
 
       assert_select "[data-testid=?]", "prebooking-calendar"
@@ -137,7 +137,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       owner.update!(email: "prebooking-arrows@example.com")
       game = recurring_prebooking_game(owner)
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       get more_game_prebookings_url(game, month: "2026-09")
 
       assert_select "[data-testid=?]", "prebooking-previous-month", 0
@@ -159,7 +159,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       owner.update!(email: "prebooking-cancelled-date@example.com")
       game = recurring_prebooking_game(owner)
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       get more_game_prebookings_url(game, month: "2026-09")
 
       date = game.prebooking_dates_in(Date.new(2026, 9, 1)).second
@@ -184,7 +184,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       game = recurring_prebooking_game(owner)
       player = User.create!(email: "prebooking-assigned@example.com", name: "Assigned Player", notification_channel: "email", locale: "en")
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       slot = first_slot(game)
 
       assert_enqueued_emails 1 do
@@ -206,7 +206,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       stranger.update!(email: "prebooking-assign-stranger@example.com")
       player = User.create!(email: "prebooking-assign-target@example.com", name: "Target")
 
-      post session_url, params: { email: stranger.email }
+      sign_in_as(stranger.email)
       slot = first_slot(game)
       post assign_game_prebooking_url(game, slot), params: { user_id: player.id }
 
@@ -222,7 +222,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       game = recurring_prebooking_game(owner)
       player = User.create!(email: "prebooking-assign-twice-player@example.com", name: "Twice")
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       slot = first_slot(game)
       second = game.prebookings.find_by!(date: slot.date, slot_index: 2)
 
@@ -249,7 +249,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       owner.update!(email: "prebooking-picker@example.com")
       game = recurring_prebooking_game(owner)
 
-      post session_url, params: { email: owner.email }
+      sign_in_as(owner.email)
       get more_game_prebookings_url(game, month: "2026-09")
 
       slot = first_slot(game)
@@ -264,7 +264,7 @@ class PrebookingsControllerTest < ActionDispatch::IntegrationTest
       assert_select "form[data-testid=?][action=?]", "prebooking-assign", assign_game_prebooking_path(game, second)
 
       users(:two).update!(email: "prebooking-picker-guest@example.com")
-      post session_url, params: { email: users(:two).email }
+      sign_in_as(users(:two).email)
       get more_game_prebookings_url(game, month: "2026-09")
 
       assert_select "form[data-testid=?]", "prebooking-assign", 0

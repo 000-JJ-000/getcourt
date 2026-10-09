@@ -17,24 +17,58 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_select '[data-testid="telegram-signup-hint"] a[href=?]', notifications_account_path
   end
 
-  test "should create session" do
-    post session_url, params: { email: "sessions_test@example.com" }
-    assert_redirected_to root_path
+  test "email-only login no longer establishes a session" do
+    email = "sessions_email_only@example.com"
+
+    post session_url, params: { email: email, privacy_consent: "1", age_consent: "1" }
+
+    assert_redirected_to verify_session_path
+    assert_nil session[:user_id]
+    assert_nil User.find_by(email: email)
+    assert EmailLoginChallenge.active.exists?(email: email)
   end
 
-  test "new user created from en locale stores en telegram locale" do
-    host! "en.getcourt.co"
-    email = "sessions_en_locale@example.com"
+  test "requesting a code for a new email does not create a user yet" do
+    email = "sessions_pending_user@example.com"
 
     post session_url, params: { email: email }
 
+    assert_redirected_to verify_session_path
+    assert_nil User.find_by(email: email)
+  end
+
+  test "correct code authenticates and creates a new account" do
+    email = "sessions_new_account@example.com"
+    host! "en.getcourt.co"
+
+    post session_url, params: { email: email }
+    code = last_login_code
+
+    post "/sign_in/verify", params: { code: code }
+
     assert_redirected_to root_path
     user = User.find_by!(email: email)
+    assert_equal user.id, session[:user_id]
     assert_equal "en", user.telegram_locale
     assert_equal "en", user.locale
-    assert_equal "email", user.notification_channel
+    assert_equal "email", user.registration_source
+    assert_predicate user, :verified?
   ensure
-    User.find_by(email: email)&.destroy if defined?(email)
+    User.find_by(email: email)&.destroy
+  end
+
+  test "correct code signs in an existing account without merging strangers" do
+    user = User.create!(email: "sessions_existing@example.com", locale: "ru", name: "Existing")
+
+    post session_url, params: { email: user.email }
+    post "/sign_in/verify", params: { code: last_login_code }
+
+    assert_redirected_to root_path
+    assert_equal user.id, session[:user_id]
+    assert_equal "ru", user.reload.locale
+    assert_equal "Existing", user.name
+  ensure
+    user&.destroy
   end
 
   test "new user created from es locale stores es telegram locale" do
@@ -42,6 +76,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     email = "sessions_es_locale@example.com"
 
     post session_url, params: { email: email }
+    post "/sign_in/verify", params: { code: last_login_code }
 
     assert_redirected_to root_path
     user = User.find_by!(email: email)
@@ -51,136 +86,162 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     User.find_by(email: email)&.destroy if defined?(email)
   end
 
-  test "sign in does not overwrite an existing web locale" do
-    user = User.create!(email: "sessions_saved_locale@example.com", locale: "ru")
+  test "incorrect code fails and does not authenticate" do
+    post session_url, params: { email: "sessions_bad_code@example.com" }
 
-    post session_url, params: { email: user.email }
+    post "/sign_in/verify", params: { code: "000000" }
 
-    assert_redirected_to root_path
-    assert_equal "ru", user.reload.locale
-  ensure
-    user&.destroy
+    assert_response :unprocessable_entity
+    assert_nil session[:user_id]
+    assert_nil User.find_by(email: "sessions_bad_code@example.com")
   end
 
-  test "should send email login code when email verification is required" do
-    user = User.create!(
-      email: "sessions_email_code@example.com",
-      require_verification: true,
-      preferred_login_via: "email"
-    )
+  test "expired code fails" do
+    post session_url, params: { email: "sessions_expired@example.com" }
+    challenge = EmailLoginChallenge.active.find_by!(email: "sessions_expired@example.com")
+    code = last_login_code
+    challenge.update_columns(expires_at: 1.minute.ago)
 
-    assert_enqueued_emails 1 do
-      post session_url, params: { email: user.email }
-    end
-
-    assert_redirected_to verify_session_path(email: user.email)
-    user.reload
-    assert_equal "email", user.login_via
-    assert user.login_code.present?
-  end
-
-  test "verify page shows email copy for email verification" do
-    user = User.create!(
-      email: "sessions_verify_email@example.com",
-      preferred_login_via: "email"
-    )
-
-    get verify_session_url, params: { email: user.email }
-
-    assert_response :success
-    assert_includes response.body, I18n.t("sessions.verify.title_email")
-    assert_includes response.body, I18n.t("sessions.verify.subtitle_email")
-  ensure
-    user&.destroy
-  end
-
-  test "verify page shows telegram copy for telegram verification" do
-    user = User.create!(
-      email: "sessions_verify_telegram@example.com",
-      preferred_login_via: "telegram"
-    )
-
-    get verify_session_url, params: { email: user.email }
-
-    assert_response :success
-    assert_includes response.body, I18n.t("sessions.verify.title_telegram")
-    assert_includes response.body, I18n.t("sessions.verify.subtitle_telegram")
-  ensure
-    user&.destroy
-  end
-
-  # Проверка входа по коду: раньше почтовый метод пускал с любыми цифрами.
-  { "email" => "email", "telegram" => "telegram" }.each do |method, via|
-    test "a wrong code does not sign in a #{method} account with verification on" do
-      user = user_with_code(via)
-
-      post "/sign_in/verify", params: { email: user.email, code: "0000" }
-
-      assert_response :unprocessable_entity
-      assert_nil session[:user_id]
-    end
-
-    test "the right code signs in a #{method} account and cannot be reused" do
-      user = user_with_code(via)
-      code = user.login_code
-
-      post "/sign_in/verify", params: { email: user.email, code: code }
-
-      assert_redirected_to root_path
-      assert_equal user.id, session[:user_id]
-      assert_nil user.reload.login_code
-
-      delete destroy_session_url
-      post "/sign_in/verify", params: { email: user.email, code: code }
-
-      assert_response :unprocessable_entity
-      assert_nil session[:user_id]
-    end
-  end
-
-  test "an empty code does not sign in" do
-    user = user_with_code("email")
-
-    post "/sign_in/verify", params: { email: user.email, code: "" }
+    post "/sign_in/verify", params: { code: code }
 
     assert_response :unprocessable_entity
     assert_nil session[:user_id]
   end
 
-  test "a code older than its lifetime does not sign in" do
-    user = user_with_code("email")
-    user.update_columns(login_code_sent_at: 16.minutes.ago)
+  test "reused code fails" do
+    email = "sessions_reuse@example.com"
+    post session_url, params: { email: email }
+    code = last_login_code
 
-    post "/sign_in/verify", params: { email: user.email, code: user.login_code }
+    post "/sign_in/verify", params: { code: code }
+    assert_equal User.find_by!(email: email).id, session[:user_id]
 
+    delete destroy_session_url
+    assert_nil session[:user_id]
+
+    post "/sign_in/verify", params: { code: code }
+    assert_response :redirect
+    assert_redirected_to new_session_path
+    assert_nil session[:user_id]
+  ensure
+    User.find_by(email: email)&.destroy
+  end
+
+  test "excessive failed attempts lock the challenge" do
+    post session_url, params: { email: "sessions_locked@example.com" }
+    EmailLoginChallenge::MAX_FAILED_ATTEMPTS.times do
+      post "/sign_in/verify", params: { code: "000000" }
+      assert_response :unprocessable_entity
+      assert_nil session[:user_id]
+    end
+
+    post "/sign_in/verify", params: { code: last_login_code }
     assert_response :unprocessable_entity
     assert_nil session[:user_id]
   end
 
-  test "an account without verification still signs in without a code" do
-    user = User.create!(email: "sessions_no_verification@example.com")
+  test "registered and unknown emails get the same challenge response shape" do
+    User.create!(email: "sessions_known@example.com")
 
-    post "/sign_in/verify", params: { email: user.email, code: "" }
+    post session_url, params: { email: "sessions_known@example.com" }
+    known_location = response.headers["Location"]
+    known_status = response.status
 
+    post session_url, params: { email: "sessions_unknown_#{SecureRandom.hex(4)}@example.com" }
+    unknown_location = response.headers["Location"]
+    unknown_status = response.status
+
+    assert_equal known_status, unknown_status
+    assert_equal known_location, unknown_location
+    assert_equal verify_session_path, URI(known_location).path
+  end
+
+  test "sign in rotates the session id" do
+    get new_session_url
+    before = session.id
+
+    post session_url, params: { email: "sessions_rotate@example.com" }
+    post "/sign_in/verify", params: { code: last_login_code }
+
+    refute_equal before.to_s, session.id.to_s
+    assert session[:user_id].present?
+  ensure
+    User.find_by(email: "sessions_rotate@example.com")&.destroy
+  end
+
+  test "logout invalidates the authenticated session" do
+    sign_in_with_email("sessions_logout@example.com")
+    assert session[:user_id].present?
+
+    delete destroy_session_url
+
+    assert_nil session[:user_id]
+    get edit_account_url
+    assert_redirected_to new_session_path
+  ensure
+    User.find_by(email: "sessions_logout@example.com")&.destroy
+  end
+
+  test "unverified input cannot take over an existing account" do
+    victim = User.create!(email: "sessions_victim@example.com", name: "Victim")
+
+    post session_url, params: { email: victim.email }
+    assert_nil session[:user_id]
+    assert_equal "Victim", victim.reload.name
+
+    post "/sign_in/verify", params: { code: "111111" }
+    assert_nil session[:user_id]
+    assert_equal victim.id, User.find_by!(email: victim.email).id
+  ensure
+    victim&.destroy
+  end
+
+  test "mail delivery failure does not authenticate and consumes the challenge" do
+    email = "sessions_mail_fail@example.com"
+    stub_singleton(UserMailer, :login_code_email, ->(*) { raise StandardError, "smtp down" }) do
+      post session_url, params: { email: email }
+    end
+
+    assert_redirected_to new_session_path
+    assert_nil session[:user_id]
+    assert_nil User.find_by(email: email)
+    challenge = EmailLoginChallenge.order(:id).last
+    assert challenge.present?
+    assert_equal email, challenge.email
+    assert challenge.consumed?
+  end
+
+  test "verify page requires an outstanding challenge in the session" do
+    get verify_session_url
+    assert_redirected_to new_session_path
+  end
+
+  test "resend issues a replacement code and invalidates the prior challenge" do
+    email = "sessions_resend@example.com"
+    post session_url, params: { email: email }
+    first = EmailLoginChallenge.order(:id).last
+    first_code = last_login_code
+
+    post session_url, params: { email: email }
+    second = EmailLoginChallenge.order(:id).last
+    second_code = last_login_code
+
+    refute_equal first.id, second.id
+    assert first.reload.consumed?
+
+    post "/sign_in/verify", params: { code: first_code }
+    assert_response :unprocessable_entity
+    assert_nil session[:user_id]
+
+    post "/sign_in/verify", params: { code: second_code }
     assert_redirected_to root_path
-    assert_equal user.id, session[:user_id]
+    assert session[:user_id].present?
+  ensure
+    User.find_by(email: email)&.destroy
   end
 
   test "should destroy session" do
     delete destroy_session_url
     assert_redirected_to new_session_path
-  end
-
-  private
-
-  def user_with_code(via)
-    user = User.create!(
-      email: "sessions_code_#{via}@example.com",
-      require_verification: true,
-      preferred_login_via: via,
-      telegram_chat_id: via == "telegram" ? 123_456_789 : nil
-    )
-    user.generate_login_code!(via: via)
-    user.reload
   end
 end

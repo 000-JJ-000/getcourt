@@ -26,11 +26,6 @@ class PrebookingCalendarTest < ApplicationSystemTestCase
   private
 
   def sign_in(user)
-    visit new_session_path
-    fill_in "Email", with: user.email
-    check "privacy_consent"
-    check "age_consent"
-    click_on "Enter"
-    assert_text "Signed in as #{user.email}"
+    system_sign_in(user)
   end
 end

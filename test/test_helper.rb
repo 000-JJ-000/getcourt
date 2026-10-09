@@ -89,3 +89,9 @@ module ActiveSupport
     setup { I18n.locale = I18n.default_locale }
   end
 end
+
+module ActionDispatch
+  class IntegrationTest
+    include StubHelper if defined?(StubHelper)
+  end
+end

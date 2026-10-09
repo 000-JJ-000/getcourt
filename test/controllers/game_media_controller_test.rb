@@ -211,8 +211,4 @@ class GameMediaControllerTest < ActionDispatch::IntegrationTest
   def video_upload
     Rack::Test::UploadedFile.new(StringIO.new(SAMPLE_MP4), "video/mp4", original_filename: "lesson.mp4")
   end
-
-  def sign_in_as(user)
-    post session_url, params: { email: user.email }
-  end
 end

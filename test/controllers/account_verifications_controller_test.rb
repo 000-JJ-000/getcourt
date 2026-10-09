@@ -27,6 +27,7 @@ class AccountVerificationsControllerTest < ActionDispatch::IntegrationTest
 
   test "sending a code mails it to the account address" do
     sign_in_as(@user)
+    @user.update_columns(email_verified_at: nil)
 
     assert_enqueued_emails 1 do
       post account_verification_url
@@ -38,6 +39,7 @@ class AccountVerificationsControllerTest < ActionDispatch::IntegrationTest
 
   test "correct code confirms the account and returns to the remembered page" do
     sign_in_as(@user)
+    @user.update_columns(email_verified_at: nil)
     get new_account_verification_url, headers: { "HTTP_REFERER" => court_url(courts(:feed_approved)) }
     code = @user.generate_login_code!(via: "email")
 
@@ -50,6 +52,7 @@ class AccountVerificationsControllerTest < ActionDispatch::IntegrationTest
 
   test "wrong code leaves the account unconfirmed" do
     sign_in_as(@user)
+    @user.update_columns(email_verified_at: nil)
     @user.generate_login_code!(via: "email")
 
     patch account_verification_url, params: { code: "0000-wrong" }
@@ -59,8 +62,4 @@ class AccountVerificationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
-
-  def sign_in_as(user)
-    post session_url, params: { email: user.email }
-  end
 end

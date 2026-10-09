@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_08_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "postgis"
@@ -580,6 +580,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_08_120000) do
     t.string "text_hash", null: false
     t.datetime "updated_at", null: false
     t.index ["text_hash"], name: "index_translation_caches_on_text_hash", unique: true
+  end
+
+  create_table "email_login_challenges", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "code_digest", null: false
+    t.datetime "expires_at", null: false
+    t.integer "failed_attempts", default: 0, null: false
+    t.datetime "consumed_at"
+    t.string "request_ip"
+    t.string "locale"
+    t.string "telegram_locale"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email", "consumed_at"], name: "index_email_login_challenges_on_email_and_consumed_at"
+    t.index ["email"], name: "index_email_login_challenges_on_email"
+    t.index ["expires_at"], name: "index_email_login_challenges_on_expires_at"
   end
 
   create_table "users", force: :cascade do |t|

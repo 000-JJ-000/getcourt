@@ -27,7 +27,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   # Ревью: снятые галки браузер не шлёт, и «Снять всё» оставляло прежние
   # корты. Форма отправляет пустое значение — список кортов очищается.
   test "clearing every court in the form removes the tournament courts" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
 
     get edit_tournament_url(@tournament)
     assert_select "input[type=hidden][name='tournament[court_ids][]'][value='']", 1
@@ -77,7 +77,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "add_match creates tournament match for valid score" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     @tournament.tournament_participants.find_or_create_by!(user: @organizer) { |p| p.name = @organizer.name }
 
     assert_difference("TournamentMatch.count", 1) do
@@ -95,7 +95,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "add_match accepts a tiebreak score entered on the score board" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     @tournament.tournament_participants.find_or_create_by!(user: @organizer) { |p| p.name = @organizer.name }
 
     assert_difference("TournamentMatch.count", 1) do
@@ -111,7 +111,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "add match form uses the same score board as games" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
 
     get tournament_url(@tournament)
 
@@ -120,7 +120,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "add_match rejects missing players" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     assert_no_difference("TournamentMatch.count") do
       post add_match_tournament_url(@tournament), params: {
         player_a_id: @participant.id,
@@ -136,7 +136,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
 
   test "same-city tournament appears before other-city tournament on index" do
     user_email = "tournaments_city_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     city_user = User.find_by!(email: user_email)
     city_user.update_column(:city_name, "Kazan")
 
@@ -166,7 +166,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
 
   test "same-city tournament appears before other-city tournament on my_tournaments" do
     user_email = "my_tournaments_city_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     city_user = User.find_by!(email: user_email)
     city_user.update_column(:city_name, "Kazan")
 
@@ -195,7 +195,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "add_match is blocked before tournament starts" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     future_tournament = Tournament.create!(
       user: @organizer,
       name: "Future Tournament",
@@ -221,7 +221,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   # ---- tournament games ---------------------------------------------------
 
   test "add_match mirrors the match as a game of the tournament" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     @tournament.tournament_participants.find_or_create_by!(user: @organizer) { |p| p.name = @organizer.name }
 
     assert_difference("Game.count", 1) do
@@ -241,7 +241,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "select_bracket spreads games over the tournament days and skips byes" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     tournament = Tournament.create!(user: @organizer, name: "Bracket Cup", players_count: 6,
                                     format: "singles", start_date: Date.current, end_date: Date.current + 3.days)
     tournament.courts << courts(:one)
@@ -273,7 +273,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "tournament game form hides the standalone game options and limits date and court" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     game = @tournament.create_game!(organizer: @organizer, player_ids: [ @participant.id ])
 
     get edit_game_url(game)
@@ -320,7 +320,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "add_match without a court asks the organizer to add one" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     @tournament.tournament_courts.destroy_all
     @tournament.tournament_participants.find_or_create_by!(user: @organizer) { |p| p.name = @organizer.name }
 
@@ -338,7 +338,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   # ---- CRUD ---------------------------------------------------------------
 
   test "organizer can update the tournament" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
 
     patch tournament_url(@tournament), params: { tournament: { name: "Renamed Cup", players_count: 6 } }
 
@@ -348,7 +348,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "invalid update re-renders the form" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
 
     patch tournament_url(@tournament), params: { tournament: { name: "" } }
 
@@ -357,7 +357,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "non-organizer cannot edit or destroy the tournament" do
-    post session_url, params: { email: @participant_email }
+    sign_in_as(@participant_email)
 
     get edit_tournament_url(@tournament)
     assert_redirected_to tournaments_url
@@ -368,7 +368,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "organizer can destroy the tournament and its games stay in the games list" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     game = @tournament.create_game!(organizer: @organizer, player_ids: [ @participant.id ])
 
     assert_difference("Tournament.count", -1) do
@@ -383,7 +383,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
 
   test "join adds an approved participant while there are free spots" do
     user_email = "tournament_joiner_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
 
     post join_tournament_url(@tournament)
 
@@ -392,7 +392,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "organizer can join their own tournament" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
 
     get tournament_url(@tournament)
     assert_select "form[action=?]", join_tournament_path(@tournament)
@@ -407,7 +407,7 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
     @tournament.tournament_participants.create!(user: users(:one), name: "Filler", status: "approved")
     assert @tournament.full?
 
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
 
     post join_tournament_url(@tournament)
 
@@ -419,21 +419,21 @@ class TournamentsControllerTest < ActionDispatch::IntegrationTest
     @tournament.tournament_participants.create!(user: @organizer, name: @organizer.name, status: "approved")
 
     user_email = "tournament_late_#{SecureRandom.hex(4)}@example.com"
-    post session_url, params: { email: user_email }
+    sign_in_as(user_email)
     post join_tournament_url(@tournament)
 
     latecomer = User.find_by!(email: user_email)
     participant = @tournament.tournament_participants.find_by(user: latecomer)
     assert participant.pending?
 
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     patch tournament_participant_url(@tournament, participant)
 
     assert participant.reload.approved?
   end
 
   test "organizer can remove a participant" do
-    post session_url, params: { email: @organizer_email }
+    sign_in_as(@organizer_email)
     participant = @tournament.tournament_participants.find_by!(user: @participant)
 
     assert_difference("TournamentParticipant.count", -1) do

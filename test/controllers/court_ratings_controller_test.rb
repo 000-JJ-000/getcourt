@@ -24,6 +24,7 @@ class CourtRatingsControllerTest < ActionDispatch::IntegrationTest
 
   test "signed in but unverified person is sent to verification" do
     sign_in_as(@unverified)
+    @unverified.update_columns(email_verified_at: nil)
 
     post court_rating_url(@court), params: { value: 4 }
 
@@ -97,9 +98,5 @@ class CourtRatingsControllerTest < ActionDispatch::IntegrationTest
     rating = @court.rating_from(user)
     rating.value = value
     rating.save!
-  end
-
-  def sign_in_as(user)
-    post session_url, params: { email: user.email }
   end
 end

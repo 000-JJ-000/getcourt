@@ -73,7 +73,9 @@ class ApplicationController < ActionController::Base
   end
 
   def current_user
-    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id].present?
+    return @current_user if defined?(@current_user)
+
+    @current_user = find_current_user_if_session_valid
   end
 
   def user_signed_in?
@@ -81,17 +83,23 @@ class ApplicationController < ActionController::Base
   end
 
   def sign_in(user)
+    # Rotate the session id to prevent fixation; keep post-login return path.
+    return_to = session[:return_to]
+    reset_session
     session[:user_id] = user.id
+    session[:authenticated_at] = Time.current.iso8601
+    session[:return_to] = return_to if return_to.present?
     # Подтверждение владения токеном привязано к тому, кто вошёл: sign_out чистит
     # только user_id, и без этого следующий вход в том же браузере унаследовал бы
     # чужое подтверждение.
     forget_api_token_confirmation!
+    @current_user = user
   end
 
   def sign_out
-    session.delete(:user_id)
+    reset_session
     forget_api_token_confirmation!
-    @current_user = nil
+    remove_instance_variable(:@current_user) if defined?(@current_user)
   end
 
   def authenticate_user!
@@ -113,5 +121,34 @@ class ApplicationController < ActionController::Base
 
   def geocoding_exceeded?
     defined?(Geocoding::Quota) && Geocoding::Quota.exceeded?
+  end
+
+  # Absolute expiration from sign-in time (not inactivity). Cookie Max-Age is the
+  # same ceiling; a retained cookie past authenticated_at is rejected here.
+  def find_current_user_if_session_valid
+    user_id = session[:user_id]
+    return if user_id.blank?
+
+    unless session_within_absolute_ttl?
+      reset_session
+      forget_api_token_confirmation!
+      return
+    end
+
+    User.find_by(id: user_id)
+  end
+
+  def session_within_absolute_ttl?
+    raw = session[:authenticated_at]
+    return false if raw.blank?
+
+    authenticated_at = Time.iso8601(raw.to_s)
+    authenticated_at > session_absolute_ttl.ago
+  rescue ArgumentError, TypeError
+    false
+  end
+
+  def session_absolute_ttl
+    Rails.application.config.x.session_absolute_ttl || 30.days
   end
 end

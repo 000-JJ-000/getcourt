@@ -17,7 +17,9 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "an unverified account cannot get a token" do
-    sign_in_as("api-token-stranger@example.com")
+    user = sign_in_as("api-token-stranger@example.com")
+    # OTP login marks email verified; clear it to exercise the gate.
+    user.update_columns(email_verified_at: nil)
 
     post api_token_url
 
@@ -95,7 +97,7 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
     user.update!(email_verified_at: Time.current)
 
     post send_code_api_token_url
-    post confirm_api_token_url, params: { code: wrong_code_for(user) }, as: :json
+    post confirm_api_token_url, params: { code: "000000" }, as: :json
 
     assert_response :forbidden
 
@@ -109,9 +111,11 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
     user = sign_in_as("api-token-guessed@example.com")
     user.update!(email_verified_at: Time.current)
 
-    post send_code_api_token_url
-    code = user.reload.login_code
-    wrong = code == "0000" ? "1111" : "0000"
+    perform_enqueued_jobs only: ActionMailer::MailDeliveryJob do
+      post send_code_api_token_url
+    end
+    code = last_login_code
+    wrong = code == "000000" ? "111111" : "000000"
 
     ApiTokensController::MAX_CODE_ATTEMPTS.times do
       post confirm_api_token_url, params: { code: wrong }, as: :json
@@ -139,13 +143,13 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
         assert_response :accepted
       end
     end
-    code = user.reload.login_code
+    digest = user.reload.login_code
 
     assert_no_enqueued_emails do
       post send_code_api_token_url, headers: { "REMOTE_ADDR" => "192.0.2.4" }, as: :json
       assert_response :too_many_requests
     end
-    assert_equal code, user.reload.login_code
+    assert_equal digest, user.reload.login_code
 
     travel 16.minutes do
       assert_enqueued_emails 1 do
@@ -154,6 +158,7 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
 
   test "code delivery is limited per IP across accounts" do
     assert_enqueued_emails 10 do
@@ -183,9 +188,9 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
     user = sign_in_as("api-token-interleaved@example.com")
     user.update!(email_verified_at: Time.current)
     other_session = open_session
-    other_session.post session_url, params: { email: user.email }
+    sign_in_on(other_session, user.email)
     post send_code_api_token_url
-    wrong = wrong_code_for(user)
+    wrong = "000000"
     interleaved = false
 
     # Второй запрос вклинивается после чтения старого счётчика либо после
@@ -211,7 +216,7 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
     confirm_ownership(user)
 
     delete destroy_session_url
-    post session_url, params: { email: user.email }
+    sign_in_as(user.email)
 
     post api_token_url, as: :json
 
@@ -220,17 +225,9 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
 
   private
 
-  def sign_in_as(email)
-    post session_url, params: { email: email }
-    User.find_by!(email: email)
-  end
-
   def confirm_ownership(user)
-    post send_code_api_token_url
-    post confirm_api_token_url, params: { code: user.reload.login_code }
-  end
-
-  def wrong_code_for(user)
-    user.reload.login_code == "0000" ? "1111" : "0000"
+    # generate_login_code! returns plaintext; send_code may use Telegram with no mail.
+    code = user.generate_login_code!(via: user.telegram_chat_id.present? ? "telegram" : "email")
+    post confirm_api_token_url, params: { code: code }
   end
 end

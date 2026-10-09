@@ -99,13 +99,6 @@ class UserPickerTest < ApplicationSystemTestCase
   private
 
   def sign_in(user)
-    visit new_session_path
-    fill_in "Email", with: user.email
-    # Настоящий браузер не даст отправить форму без обязательных галок.
-    check "privacy_consent"
-    check "age_consent"
-    click_on "Enter"
-    # Дальше идём только после редиректа: иначе visit уходит без сессии.
-    assert_text "Signed in as #{user.email}"
+    system_sign_in(user)
   end
 end

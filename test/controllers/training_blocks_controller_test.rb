@@ -8,7 +8,7 @@ class TrainingBlocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a coach sees their own blocks and not someone else's" do
-    post session_url, params: { email: "library-coach@example.com" }
+    sign_in_with_email("library-coach@example.com")
     coach = User.find_by!(email: "library-coach@example.com")
     coach.update!(coach: true)
     coach.training_blocks.create!(title: "Подача")
@@ -26,7 +26,7 @@ class TrainingBlocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "the court diagram comes from the form as JSON and is stored normalized" do
-    post session_url, params: { email: "library-diagram@example.com" }
+    sign_in_with_email("library-diagram@example.com")
     coach = User.find_by!(email: "library-diagram@example.com")
     coach.update!(coach: true)
     diagram = {
@@ -49,7 +49,7 @@ class TrainingBlocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a block is created, renamed and deleted from the library" do
-    post session_url, params: { email: "library-crud@example.com" }
+    sign_in_with_email("library-crud@example.com")
     coach = User.find_by!(email: "library-crud@example.com")
     coach.update!(coach: true)
 
@@ -72,7 +72,7 @@ class TrainingBlocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a block without a title is rejected" do
-    post session_url, params: { email: "library-invalid@example.com" }
+    sign_in_with_email("library-invalid@example.com")
     coach = User.find_by!(email: "library-invalid@example.com")
     coach.update!(coach: true)
 
@@ -85,7 +85,7 @@ class TrainingBlocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "someone else's block cannot be edited or deleted" do
-    post session_url, params: { email: "library-thief@example.com" }
+    sign_in_with_email("library-thief@example.com")
     thief = User.find_by!(email: "library-thief@example.com")
     stranger = User.create!(email: "library-victim@example.com", coach: true)
     block = stranger.training_blocks.create!(title: "Подача")
@@ -103,7 +103,7 @@ class TrainingBlocksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "a block is sent to the shared library and taken back" do
-    post session_url, params: { email: "library-shared@example.com" }
+    sign_in_with_email("library-shared@example.com")
     coach = User.find_by!(email: "library-shared@example.com")
     coach.update!(coach: true)
 

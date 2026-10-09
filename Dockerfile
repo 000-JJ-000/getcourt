@@ -83,15 +83,21 @@ CMD ["web"]
 # --- development override target (bind-mount friendly) ---
 FROM base AS development
 
+# Chromium + driver for Selenium system tests only (not in production runtime image).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    chromium \
+    chromium-driver \
+    fonts-liberation \
     git \
     libffi-dev \
     libpq-dev \
     libvips42 \
     libyaml-dev \
     pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && chromium --version \
+    && chromedriver --version
 
 ENV RAILS_ENV=development
 

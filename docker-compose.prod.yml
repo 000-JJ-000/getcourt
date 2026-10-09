@@ -108,12 +108,17 @@ services:
     command: ["worker"]
     volumes:
       - rails_storage:/rails/storage
+    # Process must be up AND the queue DB must accept connections (no secrets in output).
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'solid-queue|jobs start' >/dev/null || exit 1"]
-      interval: 20s
-      timeout: 5s
+      test:
+        [
+          "CMD-SHELL",
+          "pgrep -f 'solid-queue|jobs start' >/dev/null && bundle exec rails runner 'SolidQueue::Job.connection.select_value(%q{SELECT 1})' >/dev/null || exit 1"
+        ]
+      interval: 30s
+      timeout: 15s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     networks:
       - internal
 

@@ -50,8 +50,4 @@ class CourtSuggestionApprovalsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
-
-  def sign_in_as(user)
-    post session_url, params: { email: user.email }
-  end
 end

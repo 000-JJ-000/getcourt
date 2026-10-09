@@ -41,8 +41,8 @@ class I18nRenderSmokeTest < ActionDispatch::IntegrationTest
 
     test "#{loc} authenticated pages" do
       host! "#{loc}.example.com"
-      user = users(:one)
-      post session_url, params: { email: user.email }
+      user = User.create!(email: "i18n-auth-#{loc}@example.com", name: "I18n Auth")
+      sign_in_as(user)
       follow_redirect! while response.redirect?
 
       game  = games(:one)

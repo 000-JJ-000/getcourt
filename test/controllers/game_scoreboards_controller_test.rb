@@ -5,7 +5,7 @@ require "turbo/broadcastable/test_helper"
 class GameScoreboardsControllerTest < ActionDispatch::IntegrationTest
   include Turbo::Broadcastable::TestHelper
   setup do
-    post session_url, params: { email: "scoreboard-owner@example.com" }
+    sign_in_with_email("scoreboard-owner@example.com")
     @owner = User.find_by!(email: "scoreboard-owner@example.com")
     @rival = User.create!(email: "scoreboard-rival@example.com", name: "Rival")
     @game = Game.create!(court: courts(:one), user: @owner, date: Date.yesterday, time: "10:00")
@@ -211,7 +211,7 @@ class GameScoreboardsControllerTest < ActionDispatch::IntegrationTest
   test "only people of the game can keep the score, but anyone can watch" do
     start_match
     delete sign_out_url
-    post session_url, params: { email: "scoreboard-outsider@example.com" }
+    sign_in_with_email("scoreboard-outsider@example.com")
 
     get game_scoreboard_url(@game)
     assert_response :success

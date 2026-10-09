@@ -1,22 +1,23 @@
 require "test_helper"
 
-# Лимиты живут в Rack::Attack, а в тестовой среде кэш — :null_store, поэтому
-# счётчики никуда не пишутся. На время теста подменяем хранилище на память.
+# Limits live in Rack::Attack; the test env uses :null_store, so counters would
+# not persist. Swap in a memory store for these examples.
 class LoginCodeThrottlingTest < ActionDispatch::IntegrationTest
   setup do
+    @previous_enabled = Rack::Attack.enabled
     @previous_store = Rack::Attack.cache.store
+    Rack::Attack.enabled = true
     Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
-    @user = User.create!(
-      email: "throttled-login@example.com",
-      require_verification: true,
-      preferred_login_via: "email"
-    )
-    @code = @user.generate_login_code!(via: "email")
+    @email = "throttled-login@example.com"
+    post session_url, params: { email: @email }
+    @code = last_login_code
   end
 
   teardown do
     Rack::Attack.cache.store = @previous_store
-    @user&.destroy
+    Rack::Attack.enabled = @previous_enabled
+    User.find_by(email: @email)&.destroy
+    EmailLoginChallenge.where(email: @email).delete_all
   end
 
   test "wrong codes for one email run into the limit" do
@@ -26,14 +27,12 @@ class LoginCodeThrottlingTest < ActionDispatch::IntegrationTest
     attempt(code: wrong_code)
     assert_response :too_many_requests
 
-    # Правильный код тоже упирается в лимит: иначе перебор просто доводят до конца.
+    # The right code is blocked too once the bucket is full.
     attempt(code: @code)
     assert_response :too_many_requests
     assert_nil session[:user_id]
   end
 
-  # Rails узнаёт тот же маршрут во всех этих написаниях, включая закодированную
-  # букву в расширении и произвольный суффикс формата.
   test "the same limit covers every spelling of the route Rails accepts" do
     paths = [
       "/sign_in/verify",
@@ -49,24 +48,20 @@ class LoginCodeThrottlingTest < ActionDispatch::IntegrationTest
     assert_response :too_many_requests
   end
 
-  # Обрезанное по лимиту тело не разбирается, и раньше попытка проходила мимо
-  # счётчика: контроллер-то читает тело целиком.
   test "an oversized JSON body does not buy extra attempts" do
     padding = "x" * (70 * 1024)
     11.times do
       post "/sign_in/verify",
-           params: { email: @user.email, code: wrong_code, padding: padding }.to_json,
+           params: { email: @email, code: wrong_code, padding: padding }.to_json,
            headers: { "CONTENT_TYPE" => "application/json" }
     end
 
     assert_response :too_many_requests
   end
 
-  # Rails берёт почту из query поверх тела; счётчик должен смотреть туда же,
-  # иначе подставные адреса в теле уводят попытки в чужие корзины.
   test "the counter follows the email Rails actually signs in with" do
     11.times do |index|
-      post "/sign_in/verify?email=#{CGI.escape(@user.email)}",
+      post "/sign_in/verify?email=#{CGI.escape(@email)}",
            params: { email: "decoy-#{index}@example.com", code: wrong_code }
     end
 
@@ -76,20 +71,18 @@ class LoginCodeThrottlingTest < ActionDispatch::IntegrationTest
   test "an email sent as JSON counts towards the same limit" do
     11.times do
       post "/sign_in/verify",
-           params: { email: @user.email, code: wrong_code }.to_json,
+           params: { email: @email, code: wrong_code }.to_json,
            headers: { "CONTENT_TYPE" => "application/json" }
     end
 
     assert_response :too_many_requests
   end
 
-  # На подтверждении токена почты в запросе нет, поэтому там работает лимит на
-  # адрес; сам подбор кода дополнительно упирается в счётчик промахов.
   test "confirming token ownership runs into the address limit" do
     owner = User.create!(email: "token-confirm-throttle@example.com", email_verified_at: Time.current)
-    post session_url, params: { email: owner.email }
+    sign_in_as(owner.email)
 
-    31.times { post confirm_api_token_url, params: { code: "0000" } }
+    31.times { post confirm_api_token_url, params: { code: "000000" } }
 
     assert_response :too_many_requests
   ensure
@@ -107,11 +100,10 @@ class LoginCodeThrottlingTest < ActionDispatch::IntegrationTest
   private
 
   def attempt(code:, path: "/sign_in/verify")
-    post path, params: { email: @user.email, code: code }
+    post path, params: { email: @email, code: code }
   end
 
-  # Настоящий код случайный, поэтому «заведомо неверный» выбираем от него.
   def wrong_code
-    @code == "0000" ? "1111" : "0000"
+    @code == "000000" ? "111111" : "000000"
   end
 end

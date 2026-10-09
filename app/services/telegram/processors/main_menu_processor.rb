@@ -49,19 +49,18 @@ module Telegram
           when /\A\/start\b/
             chat_id = message.dig("chat", "id") || message.dig("from", "id")
             begin
-              user = User.find_or_initialize_by(telegram_chat_id: chat_id.to_s)
-              telegram_locale = Telegram::I18n.locale_from_language_code(message.dig("from", "language_code"))
-              user.telegram_locale = telegram_locale if telegram_locale && (user.new_record? || user.telegram_locale.blank?)
-              if user.new_record?
-                user.telegram_username = message.dig("from", "username") rescue nil
-                user.name = message.dig("from", "first_name") rescue nil if user.respond_to?(:name=)
-                user.save(validate: false) rescue nil
-                Rails.logger.info "[Telegram::MainMenuProcessor] created user id=#{user.id} chat=#{chat_id}"
-              elsif user.will_save_change_to_telegram_locale?
-                user.save(validate: false) rescue nil
+              # Do not create accounts from /start alone — that enabled WebApp
+              # login for email-less ghost users. Link via /register <token> from
+              # a signed-in web session, or use an already-linked chat_id.
+              user = User.find_by(telegram_chat_id: chat_id.to_s)
+              if user
+                telegram_locale = Telegram::I18n.locale_from_language_code(message.dig("from", "language_code"))
+                if telegram_locale && user.telegram_locale.blank?
+                  user.update_column(:telegram_locale, telegram_locale)
+                end
               end
             rescue => e
-              Rails.logger.error "[Telegram::MainMenuProcessor] user create error: #{e.class} #{e.message}"
+              Rails.logger.error "[Telegram::MainMenuProcessor] /start error: #{e.class} #{e.message}"
             end
 
             # [bot-menu-off] Отключено намеренно: пользуемся сайтом getcourt.co,
