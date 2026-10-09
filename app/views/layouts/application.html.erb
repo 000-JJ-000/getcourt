@@ -109,13 +109,21 @@
         <div class="hidden md:flex items-center gap-5">
           <%= link_to t("layout.nav.games"), root_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
           <%= link_to t("layout.nav.courts"), courts_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
+          <% if user_signed_in? %>
+            <%= link_to t("layout.nav.players"), players_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
+            <%= link_to t("layout.nav.invitations"), invitations_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
+          <% end %>
           <%= link_to t("layout.nav.tennis_life"), tennis_life_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
           <details class="relative inline-block">
             <summary class="text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer list-none transition dark:text-slate-300 dark:hover:text-white"><%= t("layout.nav.more") %> &#9662;</summary>
             <div class="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50 py-1 dark:border-white/10 dark:bg-slate-800">
-              <%= link_to t("layout.nav.tournaments"), tournaments_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
-              <%= link_to t("layout.nav.coaches"), coaches_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
-              <%= link_to t("layout.nav.contacts"), contacts_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+            <%= link_to t("layout.nav.tournaments"), tournaments_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+            <%= link_to t("layout.nav.coaches"), coaches_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+            <% if user_signed_in? %>
+              <%= link_to t("layout.nav.players"), players_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+              <%= link_to t("layout.nav.invitations"), invitations_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+            <% end %>
+            <%= link_to t("layout.nav.contacts"), contacts_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
               <%= link_to t("layout.nav.statistics"), tennis_life_statistics_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
               <%= link_to t("layout.nav.partnership"), partnership_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
               <%= link_to t("layout.nav.formats_rules"), tennis_formats_and_rules_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
@@ -267,6 +275,10 @@
           <div class="absolute bottom-14 right-0 w-56 bg-white border rounded-lg shadow-lg z-50 py-1 dark:border-white/10 dark:bg-slate-800">
             <%= link_to t("layout.nav.tournaments"), tournaments_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <%= link_to t("layout.nav.coaches"), coaches_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+            <% if user_signed_in? %>
+              <%= link_to t("layout.nav.players"), players_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+              <%= link_to t("layout.nav.invitations"), invitations_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+            <% end %>
             <%= link_to t("layout.nav.contacts"), contacts_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <%= link_to t("layout.nav.statistics"), tennis_life_statistics_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <%= link_to t("layout.nav.partnership"), partnership_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>

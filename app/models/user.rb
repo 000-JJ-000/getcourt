@@ -1,10 +1,14 @@
 class User < ApplicationRecord
-  before_validation :normalize_email, :set_default_notification_channel
+  before_validation :normalize_email, :set_default_notification_channel, :normalize_ntrp_rating
   before_validation :set_default_registration_source, on: :create
 
   has_one :player_statistic, dependent: :destroy
   belongs_to :merged_into, class_name: "User", optional: true
+  belongs_to :city, optional: true
   has_many :merged_users, class_name: "User", foreign_key: :merged_into_id, dependent: :nullify, inverse_of: :merged_into
+  has_one_attached :avatar
+  has_many :sent_match_invitations, class_name: "MatchInvitation", foreign_key: :inviter_id, dependent: :destroy, inverse_of: :inviter
+  has_many :received_match_invitations, class_name: "MatchInvitation", foreign_key: :invitee_id, dependent: :destroy, inverse_of: :invitee
   after_create :ensure_player_statistic
 
   # Accounts merged into another one stay in the table for history, but must not
@@ -46,6 +50,16 @@ class User < ApplicationRecord
 
   SKILL_LEVELS = %w[beginner intermediate advanced pro].freeze
   SPORTS = SportCatalog::SPORTS
+  PLAY_FORMATS = %w[singles doubles].freeze
+  PLAY_STYLES = %w[casual competitive].freeze
+  PROFILE_VISIBILITIES = %w[private members public].freeze
+  AVAILABILITY_DAYS = %w[mon tue wed thu fri sat sun].freeze
+  AVAILABILITY_PERIODS = %w[morning afternoon evening].freeze
+  AVAILABILITY_NOTES_MAX = 200
+  # Self-reported NTRP only (1.0–7.0 by half-steps). Not USTA-verified.
+  NTRP_RATINGS = (2..14).map { |n| (BigDecimal(n) / 2) }.freeze
+  AVATAR_CONTENT_TYPES = %w[image/jpeg image/png image/webp].freeze
+  AVATAR_MAX_SIZE = 2.megabytes
 
   TIMEZONES = (
     TZInfo::Timezone.all_identifiers + ActiveSupport::TimeZone.all.map(&:name)
@@ -85,6 +99,9 @@ class User < ApplicationRecord
   # store preferred_sports as JSON array in a text column, default empty array
   attribute :preferred_sports, :json, default: []
   attribute :skill_levels, :json, default: {}
+  attribute :play_formats, :json, default: []
+  attribute :play_styles, :json, default: []
+  attribute :availability, :json, default: {}
   attribute :timezone, :string
   attribute :telegram_locale, :string
   attribute :recent_invite_handles, :json, default: []
@@ -120,6 +137,10 @@ class User < ApplicationRecord
 
   # валидации (опционально)
   validate :skill_levels_values_valid
+  validate :play_formats_values_valid
+  validate :play_styles_values_valid
+  validate :availability_structure_valid
+  validate :avatar_content_type_and_size
 
   has_many :games
   has_many :coached_games, class_name: "Game", foreign_key: :coach_id, dependent: :nullify, inverse_of: :coach
@@ -143,6 +164,9 @@ class User < ApplicationRecord
   validates :telegram_chat_id, uniqueness: true, allow_nil: true
   validates :skill_level, inclusion: { in: SKILL_LEVELS }, allow_nil: true
   validates :timezone, inclusion: { in: TIMEZONES }, allow_blank: true
+  validates :profile_visibility, inclusion: { in: PROFILE_VISIBILITIES }
+  validates :about_me, length: { maximum: 1000 }, allow_blank: true
+  validate :ntrp_rating_allowed
 
   # return stored timezone or default (Yekaterinburg)
   def timezone_or_default
@@ -171,6 +195,79 @@ class User < ApplicationRecord
 
   def coach?
     self.coach == true
+  end
+
+  def profile_visibility_private?
+    profile_visibility == "private"
+  end
+
+  def profile_visibility_members?
+    profile_visibility == "members"
+  end
+
+  def profile_visibility_public?
+    profile_visibility == "public"
+  end
+
+  # Incomplete / bot-only rows must not appear as community profiles.
+  def community_profile_eligible?
+    email.present? && !telegram_generated_email?
+  end
+
+  def profile_visible_to?(viewer)
+    return true if viewer&.id == id
+    return false unless community_profile_eligible?
+
+    case profile_visibility
+    when "public" then true
+    when "members" then viewer.present?
+    else false
+    end
+  end
+
+  def invitable_by?(viewer)
+    viewer.present? &&
+      viewer.id != id &&
+      accepts_match_invitations? &&
+      community_profile_eligible? &&
+      profile_visible_to?(viewer)
+  end
+
+  def ntrp_display
+    return nil if ntrp_rating.blank?
+
+    format("%.1f", ntrp_rating)
+  end
+
+  def availability_notes
+    availability.to_h["notes"].to_s
+  end
+
+  def availability_for(day)
+    Array(availability.to_h[day.to_s])
+  end
+
+  def play_preferences_present?
+    play_formats.to_a.any? || play_styles.to_a.any?
+  end
+
+  def availability_present?
+    hash = availability.to_h
+    hash["notes"].present? || AVAILABILITY_DAYS.any? { |day| Array(hash[day]).any? }
+  end
+
+  # Compact weekday labels for directory cards (I18n done by the caller).
+  def availability_days_present
+    AVAILABILITY_DAYS.select { |day| availability_for(day).any? }
+  end
+
+  def avatar_variant(size: 160)
+    return unless avatar.attached?
+
+    avatar.variant(resize_to_fill: [ size, size ]).processed
+  rescue StandardError => e
+    Rails.logger.warn("[User##{id}] avatar variant failed: #{e.class}: #{e.message}")
+    nil
   end
 
   # The newcomer checklist on the homepage: kept server-side on purpose, so closing
@@ -271,6 +368,19 @@ class User < ApplicationRecord
     self.notification_channel ||= telegram_chat_id.present? ? "telegram" : "email"
   end
 
+  def normalize_ntrp_rating
+    self.ntrp_rating = nil if ntrp_rating.blank?
+  end
+
+  def ntrp_rating_allowed
+    return if ntrp_rating.nil?
+
+    value = BigDecimal(ntrp_rating.to_s)
+    return if NTRP_RATINGS.any? { |allowed| (value - allowed).abs < BigDecimal("0.001") }
+
+    errors.add(:ntrp_rating, :inclusion)
+  end
+
   def skill_levels_values_valid
     return if skill_levels.blank?
     unless skill_levels.is_a?(Hash)
@@ -284,5 +394,74 @@ class User < ApplicationRecord
         errors.add(:skill_levels, "contains invalid entry for #{sport}")
       end
     end
+  end
+
+  def play_formats_values_valid
+    list = play_formats
+    unless list.is_a?(Array)
+      errors.add(:play_formats, :invalid)
+      return
+    end
+
+    return if list.empty?
+    return if list.all? { |item| PLAY_FORMATS.include?(item.to_s) }
+
+    errors.add(:play_formats, :invalid)
+  end
+
+  def play_styles_values_valid
+    list = play_styles
+    unless list.is_a?(Array)
+      errors.add(:play_styles, :invalid)
+      return
+    end
+
+    return if list.empty?
+    return if list.all? { |item| PLAY_STYLES.include?(item.to_s) }
+
+    errors.add(:play_styles, :invalid)
+  end
+
+  def availability_structure_valid
+    hash = availability
+    unless hash.is_a?(Hash)
+      errors.add(:availability, :invalid)
+      return
+    end
+
+    hash.each do |key, value|
+      key = key.to_s
+      if key == "notes"
+        if value.to_s.length > AVAILABILITY_NOTES_MAX
+          errors.add(:availability, :too_long)
+        end
+        next
+      end
+
+      unless AVAILABILITY_DAYS.include?(key)
+        errors.add(:availability, :invalid)
+        next
+      end
+
+      periods = Array(value)
+      unless periods.all? { |period| AVAILABILITY_PERIODS.include?(period.to_s) }
+        errors.add(:availability, :invalid)
+      end
+    end
+  end
+
+  def avatar_content_type_and_size
+    return unless avatar.attached?
+
+    unless AVATAR_CONTENT_TYPES.include?(avatar.blob.content_type)
+      errors.add(:avatar, :invalid_type)
+      avatar.purge
+      return
+    end
+
+    return if avatar.blob.byte_size <= AVATAR_MAX_SIZE
+
+    errors.add(:avatar, :too_large)
+    avatar.purge
   end
 end

@@ -7,27 +7,35 @@ class UserOnboardingPresenterTest < ActiveSupport::TestCase
 
     assert presenter.visible?
     assert_equal 0, presenter.completed_count
-    assert_equal 4, presenter.total_count
+    assert_equal 5, presenter.total_count
     assert_equal 0, presenter.progress_percent
+    assert_equal %i[name city ntrp preferences availability], presenter.items.map(&:key)
   end
 
   test "counts what is already filled in" do
-    user = User.create!(email: "half-onboarding@example.com", city_name: "Yekaterinburg", telegram_chat_id: 55_001)
+    user = User.create!(
+      email: "half-onboarding@example.com",
+      name: "Half Done",
+      city_name: "Yekaterinburg",
+      ntrp_rating: 3.0
+    )
     presenter = UserOnboardingPresenter.new(user: user)
 
     assert presenter.visible?
-    assert_equal 2, presenter.completed_count
-    assert_equal 50, presenter.progress_percent
+    assert_equal 3, presenter.completed_count
+    assert_equal 60, presenter.progress_percent
   end
 
   test "disappears once everything is done" do
     user = User.create!(
       email: "done-onboarding@example.com",
+      name: "Done Player",
       city_name: "Yekaterinburg",
-      telegram_chat_id: 55_002,
-      preferred_sports: [ "tennis" ]
+      ntrp_rating: 4.0,
+      play_formats: %w[singles],
+      play_styles: %w[casual],
+      availability: { "mon" => %w[evening] }
     )
-    Game.create!(court: courts(:one), user: user, date: Date.current + 2.days)
 
     assert_not UserOnboardingPresenter.new(user: user).visible?
   end

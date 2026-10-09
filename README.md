@@ -74,6 +74,18 @@ Both are read-only and expose only what a game page already shows in public. See
 [docs/api-and-mcp.md](docs/api-and-mcp.md) for parameters, examples and limits, or the same
 documentation for users at [getcourt.co/api-and-mcp](https://getcourt.co/api-and-mcp).
 
+## Player profiles
+
+Members edit profile fields at `/account/profile` and share a visibility-gated page at
+`/users/:id`. Self-reported NTRP, play preferences, weekly availability, and avatar
+privacy rules are documented in [docs/player-profiles.md](docs/player-profiles.md).
+
+Signed-in members can browse eligible profiles at `/players` (city / NTRP / preference
+filters). Rules: [docs/player-discovery.md](docs/player-discovery.md).
+
+Peer “Invite to play” proposals live at `/invitations` (distinct from inviting Telegram
+handles into an existing game). Lifecycle: [docs/match-invitations.md](docs/match-invitations.md).
+
 ## Authentication
 
 Sign-in is passwordless email OTP (no passwords, no OAuth in this flow):

@@ -24,6 +24,9 @@ module GetCourt
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
     config.time_zone = ENV.fetch("APP_TIME_ZONE", "Asia/Yekaterinburg")
+    # PostGIS images also install tiger/topology schemas; keep schema.rb on public only
+    # so db:schema:load / db:test:prepare do not fight extension-owned tables.
+    config.active_record.dump_schemas = "public"
 
     # Absolute authenticated lifetime is enforced server-side (see ApplicationController).
     # Cookie Max-Age matches that ceiling; activity may refresh the cookie but not

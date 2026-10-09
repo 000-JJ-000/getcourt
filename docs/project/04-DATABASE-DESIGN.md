@@ -18,7 +18,13 @@ One PostgreSQL server with logically separate Rails databases for primary, cache
 7. Document clean reset, backups, restores, connection pool sizes and operational maintenance.
 
 ## Proposed future entities (not Phase 0 migrations)
-UserIdentity; PlayerProfile; PlayerAvailability; MatchInvitation; canonical MatchResult; MatchResultConfirmation; PlayerRating; RatingEvent; Conversation; Message; DeviceRegistration; DiscordIdentity; NotificationPreference. Inspect existing tables first and prefer extensions over duplicates.
+UserIdentity; canonical MatchResult; MatchResultConfirmation; PlayerRating; RatingEvent; Conversation; Message; DeviceRegistration; DiscordIdentity; NotificationPreference. Inspect existing tables first and prefer extensions over duplicates.
+
+## Match invitations (P1-03 / P1-04)
+`match_invitations` stores peer invites plus coordination fields (`scheduling_status`, `proposed_by`, `proposal_note`, `proposal_updated_at`, `scheduling_reminded_at`). Peer games use `games.invite_only`. Details: `docs/match-invitations.md`.
+
+## Player profile columns (P1-01)
+Profile data stays on `users` (no separate `PlayerProfile` table): `ntrp_rating`, `play_formats`, `play_styles`, `availability`, `profile_visibility`, `show_stats_on_profile`, `show_telegram_on_profile`, optional `city_id` FK to `cities`, plus Active Storage `avatar`. Details: `docs/player-profiles.md`.
 
 ## Spatial privacy
 Store approximate player search coordinates derived from city/ZIP, not precise residence. Court locations may use precise public facility coordinates. Use geography columns/GiST indexes and ST_DWithin for distance queries; test miles-to-meters conversion and edge cases.

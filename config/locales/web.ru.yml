@@ -26,10 +26,133 @@ ru:
     reject: Отклонить
     remove: Удалить
     search: Поиск
+    reset: Сбросить
     prev: Назад
     next: Вперёд
     close: Закрыть
     not_specified: Не указано
+  match_invitations:
+    actions:
+      invite: Пригласить сыграть
+      accept: Принять
+      decline: Отклонить
+      cancel: Отменить
+      coordinate: Назначить время
+      confirm: Подтвердить расписание
+    status:
+      pending: Ожидает
+      accepted: Принято
+      declined: Отклонено
+      canceled: Отменено
+      expired: Истекло
+    scheduling:
+      none: —
+      needed: Нужно назначить время
+      proposed: Время предложено
+      scheduled: Запланировано
+    index:
+      title: Приглашения сыграть
+      subtitle: Предложения сыграть — не личный чат. Приглашения в уже созданную игру по-прежнему на странице игры.
+      received: Входящие
+      sent: Исходящие
+      scheduling: Нужно назначить
+      history: Недавняя история
+      empty_received: Нет входящих приглашений.
+      empty_sent: Нет исходящих приглашений.
+      empty_scheduling: Нечего планировать.
+      empty_history: История пока пуста.
+    new:
+      title: Пригласить сыграть
+      subtitle: "Предложение сыграть для %{name}"
+    show:
+      title: Приглашение
+      back: К списку приглашений
+    form:
+      play_format: Формат
+      proposed_at: Дата и время
+      proposed_at_hint: Если указать будущее время при приглашении, принятие подтверждает его и создаёт игру. Иначе время назначаете после принятия.
+      court: Корт (необязательно)
+      court_blank: Корт пока не выбран
+      message: Сообщение
+      proposal_note: Заметка (необязательно)
+      propose_title: Предложить время
+      change_proposal: Изменить предложение
+      submit: Отправить
+      submit_proposal: Отправить предложение
+    card:
+      view_game: Открыть игру
+      your_turn: Ваша очередь подтвердить
+      waiting_for_other: Ждём другого игрока
+      doubles_slots:
+        one: "Ещё %{count} свободное место в парной"
+        few: "Ещё %{count} свободных места в парной"
+        many: "Ещё %{count} свободных мест в парной"
+        other: "Ещё %{count} свободных мест в парной"
+    flash:
+      created: Приглашение отправлено.
+      accepted: Приглашение принято.
+      accepted_with_game: Приглашение принято — игра создана.
+      accepted_needs_schedule: Приглашение принято — выберите время вместе.
+      declined: Приглашение отклонено.
+      canceled: Приглашение отменено.
+      proposal_sent: Предложение времени отправлено.
+      scheduled: Время подтверждено — игра создана.
+      stale_proposal: Предложение изменилось — посмотрите актуальное.
+      cannot_confirm_own: Дождитесь подтверждения другого игрока.
+      invalid_time: Выберите корректную будущую дату и время.
+      invalid_court: Этот корт недоступен.
+      already_scheduled: Это приглашение уже запланировано.
+      not_pending: Это приглашение уже не ожидает ответа.
+      unauthorized: Так нельзя.
+      failed: Не удалось обновить приглашение.
+    mail:
+      view: Открыть приглашение
+      created:
+        subject: Новое приглашение сыграть на GetCourt
+        body: "%{name} приглашает вас сыграть %{format}. Откройте GetCourt, чтобы ответить."
+      accepted:
+        subject: Ваше приглашение приняли
+        body: "%{name} принял(а) приглашение на %{format}."
+      declined:
+        subject: Ваше приглашение отклонили
+        body: "%{name} отклонил(а) приглашение на %{format}."
+      canceled:
+        subject: Приглашение отменено
+        body: "%{name} отменил(а) приглашение на %{format}."
+      proposal_submitted:
+        subject: Предложение времени на GetCourt
+        body: "%{name} предложил(а) %{when} для вашей игры (%{format})."
+      proposal_changed:
+        subject: Предложение времени обновлено
+        body: "%{name} изменил(а) предложение на %{when} для вашей игры (%{format})."
+      scheduled:
+        subject: Игра запланирована на GetCourt
+        body: "Ваша игра (%{format}) с %{name} запланирована%{when}."
+      scheduling_reminder:
+        subject: Всё ещё нужно назначить время?
+        body: "Вы и %{name} приняли приглашение на %{format}, но ещё не назначили время."
+  players:
+    index:
+      title: Найти игроков
+      subtitle: Участники, которые открыли профиль. Приватные и незавершённые аккаунты сюда не попадают.
+      count:
+        one: "%{count} игрок"
+        few: "%{count} игрока"
+        many: "%{count} игроков"
+        other: "%{count} игроков"
+      empty_title: Никого не нашли по этим фильтрам
+      empty_body: Попробуйте другой город или расширьте диапазон NTRP. Приватные профили здесь никогда не видны.
+      availability_summary: "Обычно свободен: %{days}"
+      filters:
+        city: Город / район
+        city_placeholder: например, Екатеринбург
+        city_hint: Выберите город из списка. Пустое поле — смотреть всех (ваш город всё равно выше).
+        ntrp_min: NTRP от
+        ntrp_max: NTRP до
+        play_format: Формат
+        play_style: Стиль
+        any: Любой
+        submit: Искать
   player_statistics:
     title: "%{name} — статистика"
     empty: Статистики пока нет.
@@ -475,22 +598,26 @@ ru:
       dismiss: Скрыть
       progress: "%{done} из %{total}"
       items:
+        name:
+          title: Укажите отображаемое имя
+          description: Его видят другие игроки в профиле и в играх.
+          action: Указать имя
         city:
           title: Укажите город
           description: Игры рядом будут выше, а время — в вашем часовом поясе.
           action: Указать город
-        telegram:
-          title: Привяжите Telegram
-          description: Приглашения и напоминания придут в бот, а не на почту.
-          action: Привязать Telegram
-        sport:
-          title: Выберите вид спорта и уровень
-          description: Будем показывать игры под то, во что вы играете.
-          action: Заполнить профиль
-        game:
-          title: Вступите в игру или создайте свою
-          description: Ради этого всё и затевалось — выйти на корт на этой неделе.
-          action: Создать игру
+        ntrp:
+          title: Укажите рейтинг NTRP
+          description: Только самооценка — помогает найти подходящий уровень.
+          action: Указать NTRP
+        preferences:
+          title: Выберите формат игры
+          description: Одиночка или пара, спокойно или соревновательно.
+          action: Настроить предпочтения
+        availability:
+          title: Укажите общую доступность
+          description: Примерные окна в неделе, когда вам удобно играть — не синхронизация календаря.
+          action: Указать доступность
     edit:
       title: Кабинет
       my_games: Мои игры
@@ -508,8 +635,39 @@ ru:
       title: Профиль
       name: Имя
       email: Email
+      errors_heading: Исправьте следующее
+      avatar: Фото профиля
+      avatar_hint: JPEG, PNG или WebP до 2 МБ.
+      avatar_remove: Удалить текущее фото
       skill_levels: Уровни игры
-      skill_levels_hint: Укажите свой уровень для каждого вида спорта.
+      skill_levels_hint: Укажите свой уровень для каждого вида спорта. Старые значения не перезаписываются сами.
+      ntrp_rating: Рейтинг NTRP
+      ntrp_unset: Не указан
+      ntrp_hint: Только самооценка — не подтверждено USTA.
+      play_formats: Форматы
+      play_format:
+        singles: Одиночка
+        doubles: Пара
+      play_styles: Стиль игры
+      play_style:
+        casual: Для себя
+        competitive: Соревновательный
+      availability: Общая доступность
+      availability_hint: Отметьте примерные окна в неделе. Это не календарь бронирования.
+      availability_day: День
+      availability_notes: Заметки (необязательно)
+      availability_day_name:
+        mon: Понедельник
+        tue: Вторник
+        wed: Среда
+        thu: Четверг
+        fri: Пятница
+        sat: Суббота
+        sun: Воскресенье
+      availability_period:
+        morning: Утро
+        afternoon: День
+        evening: Вечер
       coach: Я тренер
       coach_hint: Отметьте, если тренируете — так игрокам будет проще найти и нанять
         тренера.
@@ -523,6 +681,25 @@ ru:
       about_me: О себе
       about_me_placeholder: Расскажите немного о себе…
       no_city_matches: Ничего не найдено.
+      privacy: Приватность профиля
+      profile_visibility: Кто видит ваш профиль
+      profile_visibility_hint: «Только я» — только вы. «Участники» — после входа. «Публичный» — без входа.
+      visibility:
+        private: Только я
+        members: Участники
+        public: Публичный
+      show_stats_on_profile: Показывать статистику в профиле
+      show_telegram_on_profile: Показывать Telegram-ник в профиле
+      accepts_match_invitations: Разрешить участникам приглашать меня сыграть
+    show:
+      anonymous_name: Игрок
+      coach_badge: Тренер
+      edit_profile: Редактировать профиль
+      playing: Игра
+      not_set: Не указано
+      ntrp_value: "%{rating} NTRP (самооценка)"
+      telegram: Telegram
+      statistics: Статистика
     security:
       title: Безопасность
       verification_title: Рекомендуем подтверждение аккаунта

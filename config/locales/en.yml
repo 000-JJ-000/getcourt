@@ -35,8 +35,39 @@ en:
         urgent_player_search: "Player search"
       game_medium:
         file: "File"
+      user:
+        avatar: "Profile photo"
+        ntrp_rating: "NTRP rating"
+        play_formats: "Play formats"
+        play_styles: "Play styles"
+        availability: "Availability"
+        profile_visibility: "Profile visibility"
     errors:
       models:
+        user:
+          attributes:
+            avatar:
+              invalid_type: "must be JPEG, PNG, or WebP"
+              too_large: "is too big (maximum 2 MB)"
+            ntrp_rating:
+              inclusion: "must be between 1.0 and 7.0 in 0.5 steps"
+            play_formats:
+              invalid: "contains an unsupported value"
+            play_styles:
+              invalid: "contains an unsupported value"
+            availability:
+              invalid: "has an unsupported structure"
+              too_long: "notes are too long"
+        match_invitation:
+          attributes:
+            base:
+              duplicate_pending: "you already have a pending invitation to this player"
+              rate_limited: "too many pending invitations — wait for responses or cancel some"
+            invitee:
+              cannot_invite_self: "cannot be yourself"
+              not_eligible: "is not available for invitations"
+              not_accessible: "is not available for invitations"
+              opted_out: "is not accepting match invitations"
         game_scoreboard:
           attributes:
             base:
@@ -137,6 +168,8 @@ en:
       new: "New"
       tournaments: "Tournaments"
       coaches: "Coaches"
+      players: "Players"
+      invitations: "Invitations"
       contacts: "Contacts"
       statistics: "Statistics"
       partnership: "Partnership"

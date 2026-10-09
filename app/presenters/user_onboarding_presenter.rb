@@ -15,10 +15,11 @@ class UserOnboardingPresenter
 
   def items
     @items ||= [
+      Item.new(key: :name, completed: user.name.present?, path: @routes.profile_account_path),
       Item.new(key: :city, completed: user.city_name.present?, path: @routes.profile_account_path),
-      Item.new(key: :telegram, completed: user.telegram_chat_id.present?, path: @routes.notifications_account_path),
-      Item.new(key: :sport, completed: sport_chosen?, path: @routes.profile_account_path),
-      Item.new(key: :game, completed: playing?, path: @routes.new_game_path)
+      Item.new(key: :ntrp, completed: user.ntrp_rating.present?, path: @routes.profile_account_path),
+      Item.new(key: :preferences, completed: user.play_preferences_present?, path: @routes.profile_account_path),
+      Item.new(key: :availability, completed: user.availability_present?, path: @routes.profile_account_path)
     ].freeze
   end
 
@@ -34,15 +35,5 @@ class UserOnboardingPresenter
     return 100 if total_count.zero?
 
     (completed_count * 100.0 / total_count).round
-  end
-
-  private
-
-  def sport_chosen?
-    user.preferred_sports.to_a.any? || user.skill_levels.to_h.any? || user.skill_level.present?
-  end
-
-  def playing?
-    user.games.exists? || user.participations.exists?
   end
 end

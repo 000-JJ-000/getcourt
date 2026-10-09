@@ -112,6 +112,8 @@ es:
       new: "Nuevo"
       tournaments: "Torneos"
       coaches: "Entrenadores"
+      players: "Jugadores"
+      invitations: "Invitaciones"
       contacts: "Contacto"
       statistics: "Estadísticas"
       partnership: "Colaboración"

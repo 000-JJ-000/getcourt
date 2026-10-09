@@ -174,6 +174,17 @@ module ApplicationHelper
     name ? "#{name} (#{handle})" : handle
   end
 
+  def user_avatar_tag(user, size: 80, **options)
+    return image_tag("default_avatar.svg", alt: "", **options) if user.blank?
+
+    alt = user.name.presence || t("users.show.anonymous_name")
+    if user.avatar.attached? && user.profile_visible_to?(current_user)
+      image_tag(avatar_user_path(user, size: size), alt: alt, **options)
+    else
+      image_tag("default_avatar.svg", alt: alt, **options)
+    end
+  end
+
   private
 
   def seo_indexable_locale?

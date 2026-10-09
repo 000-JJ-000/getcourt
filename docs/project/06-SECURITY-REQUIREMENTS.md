@@ -22,5 +22,26 @@ Previously `SessionsController` signed users in when `require_verification` was 
 - Session fixation, CSRF, login throttling, and reset flows are reviewed.
 - Test suite and security scanners pass or all exceptions are explicitly documented.
 
+## Match invitations & coordination (P1-03 / P1-04)
+- Peer invitations require authentication; only inviter/invitee can view details; only invitee accept/decline; only inviter cancel.
+- Schedule propose/confirm is limited to invitation participants; only the non-proposer may confirm; stale `proposal_updated_at` tokens are rejected.
+- Targeting private, ineligible, opted-out, or self accounts is rejected; forged court IDs must resolve via `Court.visible_to`.
+- Peer games set `invite_only` and are excluded from public games index / API `publicly_visible`.
+- Create is rate-limited (Rack::Attack + pending-per-sender cap). See `docs/match-invitations.md`.
+- Active Storage signed routes deny `User` avatar blobs unless the session viewer passes `profile_visible_to?`.
+
+## Player discovery (P1-02)
+- `GET /players` requires authentication. Private and community-ineligible accounts are excluded from the relation before pagination; counts do not reveal their existence.
+- Filter parameters cannot broaden visibility beyond `members`/`public` eligible rows.
+- Directory cards omit email, Telegram, tokens, and coordinates. See `docs/player-discovery.md`.
+
+## Player profile privacy (P1-01)
+- Only the account owner may update profile fields via `/account/profile`.
+- Profile visibility: `private` (owner), `members` (authenticated), `public` (anonymous). Default is `members`.
+- Public HTML never includes email, login codes, Telegram chat IDs, or exact coordinates. Telegram handles appear only when `show_telegram_on_profile` is enabled.
+- Avatars stream through `UsersController#avatar` after the same visibility gate; do not rely on permanent public blob URLs for private photos.
+- Telegram-generated email accounts are not community-profile eligible and must not be discoverable via `/users/:id`.
+- See `docs/player-profiles.md`.
+
 ## Additional review
 Check upstream Telegram auth, MCP tokens, account merge, media uploads, webhooks, SSRF/geocoding, moderation endpoints, public API PII, CORS and dependency CVEs. No assertion that these are vulnerable without evidence.

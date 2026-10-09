@@ -13,6 +13,12 @@ production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+  expire_match_invitations:
+    class: ExpireMatchInvitationsJob
+    schedule: every hour at minute 20
+  match_invitation_scheduling_reminders:
+    class: MatchInvitationSchedulingReminderJob
+    schedule: at 10am every day
   # Напоминания об играх: отдельные задачи на «завтра» (args 1) и «сегодня» (args 0).
   game_reminders_tomorrow:
     class: GameReminderJob

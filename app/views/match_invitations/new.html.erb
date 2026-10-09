@@ -1,0 +1,56 @@
+<% content_for :meta_robots, "noindex, follow" %>
+
+<div class="mx-auto max-w-xl space-y-4 px-4 py-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= t("match_invitations.new.title") %></h1>
+    <p class="mt-1 text-sm text-gray-600 dark:text-slate-400">
+      <%= t("match_invitations.new.subtitle", name: @invitee.name.presence || t("users.show.anonymous_name")) %>
+    </p>
+  </div>
+
+  <div class="rounded-lg border bg-white p-4 dark:border-white/10 dark:bg-slate-800/80">
+    <%= form_with model: @invitation, url: user_match_invitations_path(@invitee), local: true, class: "space-y-4" do |f| %>
+      <% if @invitation.errors.any? %>
+        <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200" role="alert">
+          <ul class="list-disc pl-5">
+            <% @invitation.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div>
+        <%= f.label :play_format, t("match_invitations.form.play_format"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+        <%= f.select :play_format,
+              MatchInvitation::PLAY_FORMATS.map { |fmt| [t("users.profile.play_format.#{fmt}"), fmt] },
+              {},
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+
+      <div>
+        <%= f.label :proposed_at, t("match_invitations.form.proposed_at"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+        <%= f.datetime_local_field :proposed_at, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+        <p class="mt-1 text-xs text-gray-500 dark:text-slate-400"><%= t("match_invitations.form.proposed_at_hint") %></p>
+      </div>
+
+      <div>
+        <%= f.label :court_id, t("match_invitations.form.court"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+        <%= f.collection_select :court_id, @courts, :id, :name,
+              { include_blank: t("match_invitations.form.court_blank") },
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+
+      <div>
+        <%= f.label :message, t("match_invitations.form.message"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+        <%= f.text_area :message, rows: 3, maxlength: MatchInvitation::MESSAGE_MAX,
+              class: "mt-1 block w-full rounded border px-3 py-2 text-sm dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <%= f.submit t("match_invitations.form.submit"), class: "rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 cursor-pointer" %>
+        <%= link_to t("common.cancel"), user_path(@invitee), class: "text-sm text-gray-600 hover:underline dark:text-slate-300" %>
+      </div>
+    <% end %>
+  </div>
+</div>

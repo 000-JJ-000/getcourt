@@ -605,6 +605,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
       assert_equal "Sankt-Peterburg", user.reload.city_name
     ensure
+      user.update_columns(city_id: nil)
       city&.destroy
     end
   end
@@ -685,6 +686,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     yield user, cities
   ensure
+    user&.update_columns(city_id: nil) if user&.persisted?
     user&.destroy
     cities&.each_value(&:destroy)
   end

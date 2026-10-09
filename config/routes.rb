@@ -69,7 +69,25 @@ Rails.application.routes.draw do
   resources :users, only: [ :index, :show ] do
     # Подсказки для поля выбора игрока (shared/user_picker).
     get :search, on: :collection
+    get :avatar, on: :member
     resource :player_statistic, only: [ :show ]
+    resources :match_invitations, only: %i[new create], path: "invitations"
+  end
+
+  # Members-only player directory (P1-02). Separate from /users to avoid colliding
+  # with the invitation picker JSON search and any future users#index.
+  resources :players, only: [ :index ]
+
+  # Peer match invitations (P1-03). Distinct from GameInvitationsController, which
+  # notifies Telegram handles about an existing game.
+  resources :invitations, controller: :match_invitations, only: %i[index show] do
+    member do
+      post :accept
+      post :decline
+      post :cancel
+      post :propose
+      post :confirm
+    end
   end
 
   post "/games/:game_id/player_statistics", to: "player_statistics#create_for_game", as: :game_player_statistics

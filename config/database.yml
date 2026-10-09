@@ -16,6 +16,7 @@ development:
   primary:
     <<: *default
     adapter: postgis
+    schema_search_path: public
     database: <%= ENV.fetch("DATABASE_NAME", "getcourt_development") %>
   cache:
     <<: *default
@@ -37,6 +38,7 @@ test:
   primary:
     <<: *default
     adapter: postgis
+    schema_search_path: public
     database: <%= ENV.fetch("DATABASE_TEST_NAME", "getcourt_test") %>
   cache:
     <<: *default
@@ -55,6 +57,7 @@ production:
   primary:
     <<: *default
     adapter: postgis
+    schema_search_path: public
     # Include the 3 job threads configured in queue.yml when sharing Puma.
     pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5).to_i + 3 %>
     database: <%= ENV.fetch("DATABASE_NAME") %>

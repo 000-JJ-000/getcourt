@@ -45,7 +45,9 @@ class Game < ApplicationRecord
   # у которой корт ещё не выбран, — обычная и видна. NULL в moderation_status
   # берётся из LEFT JOIN — у самого корта он NOT NULL.
   scope :publicly_visible, -> {
-    left_outer_joins(:court).where(courts: { moderation_status: [ nil, "approved" ] })
+    left_outer_joins(:court)
+      .where(courts: { moderation_status: [ nil, "approved" ] })
+      .where(invite_only: false)
   }
   scope :still_running, ->(day = Date.current) {
     # ends_on проставляет колбэк, поэтому у записей, заведённых мимо него

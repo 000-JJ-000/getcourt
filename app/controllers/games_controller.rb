@@ -52,6 +52,9 @@ class GamesController < ApplicationController
         "games.user_id = :uid OR games.id IN (SELECT game_id FROM participations WHERE user_id = :uid)",
         uid: current_user.id
       )
+    else
+      # Peer invite-only matches stay off the public list; open them via My games.
+      scoped_games = scoped_games.where(invite_only: false)
     end
 
     if params[:with_spots].present? || current_user&.city_name.present?

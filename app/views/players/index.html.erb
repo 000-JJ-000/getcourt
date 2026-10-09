@@ -1,0 +1,128 @@
+<% content_for :meta_robots, "noindex, follow" %>
+
+<div class="mx-auto max-w-3xl space-y-4 px-4 py-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= t("players.index.title") %></h1>
+    <p class="mt-1 text-sm text-gray-600 dark:text-slate-400"><%= t("players.index.subtitle") %></p>
+  </div>
+
+  <%= form_with url: players_path, method: :get, local: true, class: "rounded-lg border bg-white p-4 space-y-4 dark:border-white/10 dark:bg-slate-800/80" do %>
+    <div data-controller="city-picker"
+         data-city-picker-url-value="<%= city_search_account_path %>"
+         data-city-picker-searching-value="<%= t("users.profile.city_searching") %>"
+         data-city-picker-no-matches-value="<%= t("users.profile.no_city_matches") %>"
+         data-city-picker-error-value="<%= t("users.profile.city_search_error") %>">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("players.index.filters.city") %></label>
+      <%= hidden_field_tag :selected_city_id, @filters.city_id, data: { city_picker_target: "cityId" } %>
+      <div class="relative">
+        <%= text_field_tag :city_name,
+              @selected_city&.canonical_name || @filters.city_name,
+              placeholder: t("players.index.filters.city_placeholder"),
+              autocomplete: "off",
+              data: { city_picker_target: "input", action: "input->city-picker#search focus->city-picker#reopen" },
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+        <div data-city-picker-target="results"
+             class="hidden absolute z-10 mt-1 w-full overflow-hidden rounded border bg-white shadow dark:border-white/15 dark:bg-slate-700"></div>
+      </div>
+      <p class="mt-1 text-xs text-gray-500 dark:text-slate-400"><%= t("players.index.filters.city_hint") %></p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label for="ntrp_min" class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("players.index.filters.ntrp_min") %></label>
+        <%= select_tag :ntrp_min,
+              options_for_select([[t("players.index.filters.any"), ""]] + User::NTRP_RATINGS.map { |r| [format("%.1f", r), r.to_s("F")] }, @filters.ntrp_min&.to_s("F")),
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+      <div>
+        <label for="ntrp_max" class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("players.index.filters.ntrp_max") %></label>
+        <%= select_tag :ntrp_max,
+              options_for_select([[t("players.index.filters.any"), ""]] + User::NTRP_RATINGS.map { |r| [format("%.1f", r), r.to_s("F")] }, @filters.ntrp_max&.to_s("F")),
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label for="play_format" class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("players.index.filters.play_format") %></label>
+        <%= select_tag :play_format,
+              options_for_select([[t("players.index.filters.any"), ""]] + User::PLAY_FORMATS.map { |f| [t("users.profile.play_format.#{f}"), f] }, @filters.play_format),
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+      <div>
+        <label for="play_style" class="block text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("players.index.filters.play_style") %></label>
+        <%= select_tag :play_style,
+              options_for_select([[t("players.index.filters.any"), ""]] + User::PLAY_STYLES.map { |s| [t("users.profile.play_style.#{s}"), s] }, @filters.play_style),
+              class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <%= submit_tag t("players.index.filters.submit"), class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 cursor-pointer" %>
+      <% if @filters.any? %>
+        <%= link_to t("common.reset"), players_path, class: "text-sm text-red-600 hover:underline dark:text-red-400" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="flex items-center justify-between gap-3">
+    <p class="text-sm text-gray-500 dark:text-slate-400" data-testid="players-results-summary">
+      <%= t("players.index.count", count: @pagy.count) %>
+    </p>
+  </div>
+
+  <% if @players.any? %>
+    <ul class="space-y-3" data-testid="players-results">
+      <% @players.each do |player| %>
+        <li class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-slate-800/80">
+          <div class="flex gap-4">
+            <%= link_to user_path(player), class: "shrink-0" do %>
+              <%= user_avatar_tag(player, size: 64, class: "h-14 w-14 rounded-full object-cover") %>
+            <% end %>
+            <div class="min-w-0 flex-1 space-y-1">
+              <p class="truncate text-base font-semibold text-gray-900 dark:text-slate-100">
+                <%= link_to (player.name.presence || t("users.show.anonymous_name")), user_path(player), class: "hover:underline" %>
+              </p>
+              <% if player.city_name.present? %>
+                <p class="text-sm text-gray-600 dark:text-slate-400"><%= player.city_name %></p>
+              <% end %>
+              <p class="text-sm text-gray-700 dark:text-slate-300">
+                <% if player.ntrp_display %>
+                  <%= t("users.show.ntrp_value", rating: player.ntrp_display) %>
+                <% else %>
+                  <%= t("users.show.not_set") %>
+                <% end %>
+              </p>
+              <% prefs = [] %>
+              <% prefs.concat(player.play_formats.map { |f| t("users.profile.play_format.#{f}") }) %>
+              <% prefs.concat(player.play_styles.map { |s| t("users.profile.play_style.#{s}") }) %>
+              <% if prefs.any? %>
+                <p class="text-sm text-gray-600 dark:text-slate-400"><%= prefs.join(" · ") %></p>
+              <% end %>
+              <% days = player.availability_days_present %>
+              <% if days.any? %>
+                <p class="text-xs text-gray-500 dark:text-slate-400">
+                  <%= t("players.index.availability_summary",
+                        days: days.map { |d| t("users.profile.availability_day_name.#{d}") }.join(", ")) %>
+                </p>
+              <% end %>
+              <% if player.invitable_by?(current_user) %>
+                <p class="pt-1">
+                  <%= link_to t("match_invitations.actions.invite"), new_user_match_invitation_path(player),
+                        class: "text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400" %>
+                </p>
+              <% end %>
+            </div>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+
+    <%= render "shared/pagy", pagy: @pagy %>
+  <% else %>
+    <div class="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center dark:border-white/10 dark:bg-slate-800/50" data-testid="players-empty">
+      <p class="text-sm font-medium text-gray-800 dark:text-slate-200"><%= t("players.index.empty_title") %></p>
+      <p class="mt-1 text-sm text-gray-500 dark:text-slate-400"><%= t("players.index.empty_body") %></p>
+    </div>
+  <% end %>
+</div>

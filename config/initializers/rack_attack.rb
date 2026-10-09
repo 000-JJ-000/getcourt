@@ -192,4 +192,20 @@ class Rack::Attack
   throttle("telegram_web_app_auth/ip", limit: 30, period: 1.hour) do |request|
     request.ip if telegram_web_app_auth?(request)
   end
+
+  # Peer match invitations: limit creates per signed-in user and IP.
+  def self.match_invitation_create?(request)
+    return false unless request.post?
+
+    route = recognized_route(request)
+    route.present? && route[:controller] == "match_invitations" && route[:action] == "create"
+  end
+
+  throttle("match_invitations/user", limit: 10, period: 1.hour) do |request|
+    request.session["user_id"] if match_invitation_create?(request)
+  end
+
+  throttle("match_invitations/ip", limit: 30, period: 1.hour) do |request|
+    request.ip if match_invitation_create?(request)
+  end
 end

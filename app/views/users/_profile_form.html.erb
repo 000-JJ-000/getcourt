@@ -1,4 +1,15 @@
 <div class="grid grid-cols-1 gap-4">
+  <% if @user.errors.any? %>
+    <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200" role="alert">
+      <p class="font-medium"><%= t("users.profile.errors_heading") %></p>
+      <ul class="mt-1 list-disc pl-5">
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
   <div>
     <%= f.label :name, t("users.profile.name"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
     <%= f.text_field :name, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
@@ -7,6 +18,23 @@
   <div>
     <%= f.label :email, t("users.profile.email"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
     <%= f.email_field :email, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+  </div>
+
+  <div>
+    <p class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><%= t("users.profile.avatar") %></p>
+    <div class="flex items-center gap-4">
+      <%= user_avatar_tag(@user, size: 64, class: "h-16 w-16 rounded-full object-cover") %>
+      <div class="space-y-2">
+        <%= f.file_field :avatar, accept: User::AVATAR_CONTENT_TYPES.join(","), class: "block w-full text-sm text-gray-600 dark:text-slate-300" %>
+        <p class="text-xs text-gray-500 dark:text-slate-400"><%= t("users.profile.avatar_hint") %></p>
+        <% if @user.avatar.attached? %>
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+            <%= check_box_tag :remove_avatar, "1", false %>
+            <span><%= t("users.profile.avatar_remove") %></span>
+          </label>
+        <% end %>
+      </div>
+    </div>
   </div>
 
   <div>
@@ -25,6 +53,79 @@
   </div>
 
   <div>
+    <%= f.label :ntrp_rating, t("users.profile.ntrp_rating"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+    <%= f.select :ntrp_rating,
+          options_for_select([[t("users.profile.ntrp_unset"), ""]] + User::NTRP_RATINGS.map { |r| [format("%.1f", r), r.to_s("F")] }, @user.ntrp_rating&.to_s("F")),
+          {},
+          class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    <p class="text-xs text-gray-500 dark:text-slate-400 mt-1"><%= t("users.profile.ntrp_hint") %></p>
+  </div>
+
+  <fieldset>
+    <legend class="text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("users.profile.play_formats") %></legend>
+    <div class="mt-2 flex flex-wrap gap-4">
+      <% User::PLAY_FORMATS.each do |format| %>
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+          <%= check_box_tag "user[play_formats][]", format, @user.play_formats.to_a.include?(format), id: "user_play_formats_#{format}" %>
+          <span><%= t("users.profile.play_format.#{format}") %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend class="text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("users.profile.play_styles") %></legend>
+    <div class="mt-2 flex flex-wrap gap-4">
+      <% User::PLAY_STYLES.each do |style| %>
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+          <%= check_box_tag "user[play_styles][]", style, @user.play_styles.to_a.include?(style), id: "user_play_styles_#{style}" %>
+          <span><%= t("users.profile.play_style.#{style}") %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend class="text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("users.profile.availability") %></legend>
+    <p class="mt-1 text-xs text-gray-500 dark:text-slate-400"><%= t("users.profile.availability_hint") %></p>
+    <div class="mt-3 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="text-left text-gray-600 dark:text-slate-400">
+            <th class="py-1 pr-2 font-medium"><%= t("users.profile.availability_day") %></th>
+            <% User::AVAILABILITY_PERIODS.each do |period| %>
+              <th class="px-2 py-1 font-medium"><%= t("users.profile.availability_period.#{period}") %></th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% User::AVAILABILITY_DAYS.each do |day| %>
+            <tr class="border-t border-gray-100 dark:border-white/10">
+              <th scope="row" class="py-2 pr-2 font-medium text-gray-700 dark:text-slate-300"><%= t("users.profile.availability_day_name.#{day}") %></th>
+              <% User::AVAILABILITY_PERIODS.each do |period| %>
+                <td class="px-2 py-2">
+                  <label class="inline-flex items-center gap-2">
+                    <span class="sr-only"><%= t("users.profile.availability_day_name.#{day}") %> <%= t("users.profile.availability_period.#{period}") %></span>
+                    <%= check_box_tag "user[availability][#{day}][]", period, @user.availability_for(day).include?(period), id: "user_availability_#{day}_#{period}" %>
+                  </label>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-3">
+      <label for="user_availability_notes" class="block text-sm text-gray-600 dark:text-slate-400"><%= t("users.profile.availability_notes") %></label>
+      <%= text_area_tag "user[availability][notes]", @user.availability_notes,
+            id: "user_availability_notes",
+            rows: 2,
+            maxlength: User::AVAILABILITY_NOTES_MAX,
+            class: "mt-1 block w-full rounded border px-3 py-2 text-sm dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+  </fieldset>
+
+  <div>
     <label class="inline-flex items-center gap-2">
       <%= f.check_box :coach, class: "h-4 w-4 text-indigo-600" %>
       <span class="text-sm text-gray-700 dark:text-slate-300"><%= t("users.profile.coach") %></span>
@@ -40,7 +141,7 @@
        data-city-picker-no-matches-value="<%= t("users.profile.no_city_matches") %>"
        data-city-picker-error-value="<%= t("users.profile.city_search_error") %>">
     <%= f.label :city_name, t("users.profile.city"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
-    <%= hidden_field_tag :selected_city_id, @selected_city_id, data: { city_picker_target: "cityId" } %>
+    <%= hidden_field_tag :selected_city_id, @selected_city_id || @user.city_id, data: { city_picker_target: "cityId" } %>
     <div class="relative">
       <%# На фокусе только открываем подсказки: сбрасывать выбранный город
           нельзя — возврат в поле без правки текста молча отменял бы выбор. %>
@@ -66,6 +167,34 @@
     <%= f.label :about_me, t("users.profile.about_me"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
     <%= f.text_area :about_me, rows: 4, placeholder: t("users.profile.about_me_placeholder"), class: "mt-1 block w-full rounded border px-3 py-2 text-sm" %>
   </div>
+
+  <fieldset class="space-y-3 rounded-md border border-gray-200 p-3 dark:border-white/10">
+    <legend class="px-1 text-sm font-medium text-gray-700 dark:text-slate-300"><%= t("users.profile.privacy") %></legend>
+
+    <div>
+      <%= f.label :profile_visibility, t("users.profile.profile_visibility"), class: "block text-sm text-gray-600 dark:text-slate-400" %>
+      <%= f.select :profile_visibility,
+            User::PROFILE_VISIBILITIES.map { |value| [t("users.profile.visibility.#{value}"), value] },
+            {},
+            class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+      <p class="text-xs text-gray-500 dark:text-slate-400 mt-1"><%= t("users.profile.profile_visibility_hint") %></p>
+    </div>
+
+    <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+      <%= f.check_box :show_stats_on_profile, class: "h-4 w-4 text-indigo-600" %>
+      <span><%= t("users.profile.show_stats_on_profile") %></span>
+    </label>
+
+    <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+      <%= f.check_box :show_telegram_on_profile, class: "h-4 w-4 text-indigo-600" %>
+      <span><%= t("users.profile.show_telegram_on_profile") %></span>
+    </label>
+
+    <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+      <%= f.check_box :accepts_match_invitations, class: "h-4 w-4 text-indigo-600" %>
+      <span><%= t("users.profile.accepts_match_invitations") %></span>
+    </label>
+  </fieldset>
 
   <div class="mt-4 flex items-center gap-3">
     <%= f.submit t("common.save_changes"), class: "rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 cursor-pointer" %>

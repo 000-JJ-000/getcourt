@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_09_181000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "postgis"
@@ -148,7 +148,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["court_id", "status"], name: "index_court_suggestions_on_court_id_and_status"
-    t.index ["court_id", "user_id"], name: "index_unique_pending_court_suggestions", unique: true, where: "status = 'pending'"
+    t.index ["court_id", "user_id"], name: "index_unique_pending_court_suggestions", unique: true, where: "((status)::text = 'pending'::text)"
     t.index ["court_id"], name: "index_court_suggestions_on_court_id"
     t.index ["reviewed_by_id"], name: "index_court_suggestions_on_reviewed_by_id"
     t.index ["user_id"], name: "index_court_suggestions_on_user_id"
@@ -180,6 +180,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.index ["user_id"], name: "index_courts_on_user_id"
   end
 
+  create_table "email_login_challenges", force: :cascade do |t|
+    t.string "email", null: false
+    t.string "code_digest", null: false
+    t.datetime "expires_at", null: false
+    t.integer "failed_attempts", default: 0, null: false
+    t.datetime "consumed_at"
+    t.string "request_ip"
+    t.string "locale"
+    t.string "telegram_locale"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email", "consumed_at"], name: "index_email_login_challenges_on_email_and_consumed_at"
+    t.index ["email"], name: "index_email_login_challenges_on_email"
+    t.index ["expires_at"], name: "index_email_login_challenges_on_expires_at"
+  end
+
   create_table "favorite_courts", force: :cascade do |t|
     t.integer "court_id", null: false
     t.datetime "created_at", null: false
@@ -209,7 +225,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.string "surface_label"
     t.string "tournament_label", null: false
     t.datetime "updated_at", null: false
-    t.index ["active"], name: "index_featured_matches_on_active", unique: true, where: "(active = TRUE)"
+    t.index ["active"], name: "index_featured_matches_on_active", unique: true, where: "(active = true)"
     t.index ["court_id"], name: "index_featured_matches_on_court_id"
     t.index ["game_id"], name: "index_featured_matches_on_game_id"
     t.index ["slug"], name: "index_featured_matches_on_slug", unique: true
@@ -242,7 +258,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["game_id"], name: "index_game_scoreboards_on_game_id"
-    t.index ["game_id"], name: "index_game_scoreboards_one_live_per_game", unique: true, where: "status = 'live'"
+    t.index ["game_id"], name: "index_game_scoreboards_one_live_per_game", unique: true, where: "((status)::text = 'live'::text)"
     t.index ["user_id"], name: "index_game_scoreboards_on_user_id"
   end
 
@@ -295,9 +311,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.integer "user_id", null: false
     t.boolean "with_coach", default: false, null: false
     t.string "guest_coach_name"
+    t.boolean "invite_only", default: false, null: false
     t.index ["coach_id"], name: "index_games_on_coach_id"
     t.index ["court_id"], name: "index_games_on_court_id"
     t.index ["ends_on"], name: "index_games_on_ends_on"
+    t.index ["invite_only"], name: "index_games_on_invite_only"
     t.index ["kind"], name: "index_games_on_kind"
     t.index ["prebooking_enabled"], name: "index_games_on_prebooking_enabled"
     t.index ["recurring"], name: "index_games_on_recurring"
@@ -306,6 +324,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.index ["urgent_player_search"], name: "index_games_on_urgent_player_search"
     t.index ["user_id"], name: "index_games_on_user_id"
     t.index ["with_coach"], name: "index_games_on_with_coach"
+  end
+
+  create_table "match_invitations", force: :cascade do |t|
+    t.bigint "inviter_id", null: false
+    t.bigint "invitee_id", null: false
+    t.bigint "game_id"
+    t.bigint "court_id"
+    t.string "play_format", default: "singles", null: false
+    t.datetime "proposed_at"
+    t.string "message", limit: 500
+    t.string "status", default: "pending", null: false
+    t.datetime "responded_at"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "scheduling_status", default: "none", null: false
+    t.bigint "proposed_by_id"
+    t.string "proposal_note", limit: 500
+    t.datetime "proposal_updated_at"
+    t.datetime "scheduling_reminded_at"
+    t.index ["court_id"], name: "index_match_invitations_on_court_id"
+    t.index ["expires_at"], name: "index_match_invitations_on_expires_at"
+    t.index ["game_id"], name: "index_match_invitations_on_game_id"
+    t.index ["invitee_id"], name: "index_match_invitations_on_invitee_id"
+    t.index ["inviter_id", "invitee_id"], name: "index_match_invitations_unique_pending_pair", unique: true, where: "((status)::text = 'pending'::text)"
+    t.index ["inviter_id"], name: "index_match_invitations_on_inviter_id"
+    t.index ["proposed_by_id"], name: "index_match_invitations_on_proposed_by_id"
+    t.index ["scheduling_status"], name: "index_match_invitations_on_scheduling_status"
+    t.index ["status"], name: "index_match_invitations_on_status"
+    t.check_constraint "inviter_id <> invitee_id", name: "match_invitations_not_self_check"
+    t.check_constraint "play_format::text = ANY (ARRAY['singles'::character varying, 'doubles'::character varying]::text[])", name: "match_invitations_play_format_check"
+    t.check_constraint "scheduling_status::text = ANY (ARRAY['none'::character varying, 'needed'::character varying, 'proposed'::character varying, 'scheduled'::character varying]::text[])", name: "match_invitations_scheduling_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'accepted'::character varying, 'declined'::character varying, 'canceled'::character varying, 'expired'::character varying]::text[])", name: "match_invitations_status_check"
   end
 
   create_table "matches", force: :cascade do |t|
@@ -582,22 +633,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.index ["text_hash"], name: "index_translation_caches_on_text_hash", unique: true
   end
 
-  create_table "email_login_challenges", force: :cascade do |t|
-    t.string "email", null: false
-    t.string "code_digest", null: false
-    t.datetime "expires_at", null: false
-    t.integer "failed_attempts", default: 0, null: false
-    t.datetime "consumed_at"
-    t.string "request_ip"
-    t.string "locale"
-    t.string "telegram_locale"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["email", "consumed_at"], name: "index_email_login_challenges_on_email_and_consumed_at"
-    t.index ["email"], name: "index_email_login_challenges_on_email"
-    t.index ["expires_at"], name: "index_email_login_challenges_on_expires_at"
-  end
-
   create_table "users", force: :cascade do |t|
     t.text "about_me"
     t.boolean "admin", default: false, null: false
@@ -632,9 +667,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
     t.string "telegram_username"
     t.string "timezone", default: "Asia/Yekaterinburg"
     t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_users_on_email", unique: true, where: "email IS NOT NULL"
+    t.decimal "ntrp_rating", precision: 2, scale: 1
+    t.jsonb "play_formats", default: [], null: false
+    t.jsonb "play_styles", default: [], null: false
+    t.json "availability", default: {}, null: false
+    t.string "profile_visibility", default: "members", null: false
+    t.boolean "show_stats_on_profile", default: true, null: false
+    t.boolean "show_telegram_on_profile", default: false, null: false
+    t.bigint "city_id"
+    t.boolean "accepts_match_invitations", default: true, null: false
+    t.index ["city_id"], name: "index_users_on_city_id"
+    t.index ["email"], name: "index_users_on_email", unique: true, where: "(email IS NOT NULL)"
     t.index ["login_code"], name: "index_users_on_login_code"
     t.index ["merged_into_id"], name: "index_users_on_merged_into_id"
+    t.index ["ntrp_rating"], name: "index_users_on_ntrp_rating"
+    t.index ["profile_visibility"], name: "index_users_on_profile_visibility"
     t.index ["registration_source"], name: "index_users_on_registration_source"
     t.index ["skill_level"], name: "index_users_on_skill_level"
     t.index ["telegram_chat_id"], name: "index_users_on_telegram_chat_id_unique", unique: true
@@ -668,6 +715,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
   add_foreign_key "games", "users"
   add_foreign_key "games", "users", column: "coach_id"
   add_foreign_key "games", "users", column: "second_coach_id"
+  add_foreign_key "match_invitations", "courts"
+  add_foreign_key "match_invitations", "games"
+  add_foreign_key "match_invitations", "users", column: "invitee_id"
+  add_foreign_key "match_invitations", "users", column: "inviter_id"
+  add_foreign_key "match_invitations", "users", column: "proposed_by_id"
   add_foreign_key "matches", "games"
   add_foreign_key "matches", "users"
   add_foreign_key "matches", "users", column: "opponent_id"
@@ -698,5 +750,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_120000) do
   add_foreign_key "training_plan_proposals", "users"
   add_foreign_key "training_plan_votes", "training_plan_proposals"
   add_foreign_key "training_plan_votes", "users"
+  add_foreign_key "users", "cities"
   add_foreign_key "users", "users", column: "merged_into_id"
 end

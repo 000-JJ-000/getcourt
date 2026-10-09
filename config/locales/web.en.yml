@@ -29,10 +29,131 @@ en:
     reject: Reject
     remove: Remove
     search: Search
+    reset: Reset
     prev: Prev
     next: Next
     close: Close
     not_specified: Not specified
+  match_invitations:
+    actions:
+      invite: Invite to play
+      accept: Accept
+      decline: Decline
+      cancel: Cancel
+      coordinate: Schedule
+      confirm: Confirm schedule
+    status:
+      pending: Pending
+      accepted: Accepted
+      declined: Declined
+      canceled: Canceled
+      expired: Expired
+    scheduling:
+      none: —
+      needed: Needs scheduling
+      proposed: Schedule proposed
+      scheduled: Scheduled
+    index:
+      title: Match invitations
+      subtitle: Proposals to play — not a private chat. Existing game invites via Telegram stay on the game page.
+      received: Received
+      sent: Sent
+      scheduling: Needs scheduling
+      history: Recent history
+      empty_received: No pending invitations for you.
+      empty_sent: You have not sent any pending invitations.
+      empty_scheduling: Nothing waiting to be scheduled.
+      empty_history: No past invitations yet.
+    new:
+      title: Invite to play
+      subtitle: "Send a match proposal to %{name}"
+    show:
+      title: Invitation
+      back: Back to invitations
+    form:
+      play_format: Format
+      proposed_at: Proposed date and time
+      proposed_at_hint: If you include a future time when inviting, accepting confirms that schedule and creates a game. Otherwise you schedule after accept.
+      court: Court (optional)
+      court_blank: No court yet
+      message: Message
+      proposal_note: Note (optional)
+      propose_title: Propose a time
+      change_proposal: Change proposal
+      submit: Send invitation
+      submit_proposal: Send proposal
+    card:
+      view_game: Open game
+      your_turn: Your turn to confirm
+      waiting_for_other: Waiting for the other player
+      doubles_slots:
+        one: "%{count} more doubles slot open"
+        other: "%{count} more doubles slots open"
+    flash:
+      created: Invitation sent.
+      accepted: Invitation accepted.
+      accepted_with_game: Invitation accepted — game created.
+      accepted_needs_schedule: Invitation accepted — pick a time together.
+      declined: Invitation declined.
+      canceled: Invitation canceled.
+      proposal_sent: Schedule proposal sent.
+      scheduled: Schedule confirmed — game created.
+      stale_proposal: That proposal changed — review the latest one.
+      cannot_confirm_own: Wait for the other player to confirm.
+      invalid_time: Choose a valid future date and time.
+      invalid_court: That court is not available.
+      already_scheduled: This invitation is already scheduled.
+      not_pending: That invitation is no longer pending.
+      unauthorized: You cannot do that.
+      failed: Could not update the invitation.
+    mail:
+      view: Open invitation
+      created:
+        subject: New match invitation on GetCourt
+        body: "%{name} invited you to play %{format}. Open GetCourt to respond."
+      accepted:
+        subject: Your match invitation was accepted
+        body: "%{name} accepted your %{format} invitation."
+      declined:
+        subject: Your match invitation was declined
+        body: "%{name} declined your %{format} invitation."
+      canceled:
+        subject: A match invitation was canceled
+        body: "%{name} canceled their %{format} invitation."
+      proposal_submitted:
+        subject: Schedule proposal on GetCourt
+        body: "%{name} proposed %{when} for your %{format} match."
+      proposal_changed:
+        subject: Schedule proposal updated
+        body: "%{name} changed the proposal to %{when} for your %{format} match."
+      scheduled:
+        subject: Match scheduled on GetCourt
+        body: "Your %{format} match with %{name} is scheduled%{when}."
+      scheduling_reminder:
+        subject: Still need a time to play?
+        body: "You and %{name} accepted a %{format} invite but have not scheduled yet."
+  players:
+    index:
+      title: Find players
+      subtitle: Discover members who share their profile. Private and incomplete accounts stay hidden.
+      count:
+        one: 1 player
+        few: "%{count} players"
+        many: "%{count} players"
+        other: "%{count} players"
+      empty_title: No players match these filters
+      empty_body: Try another city or widen the NTRP range. Profiles set to private never appear here.
+      availability_summary: "Usually free: %{days}"
+      filters:
+        city: City / area
+        city_placeholder: e.g. Yekaterinburg
+        city_hint: Pick a city from the list to filter. Leave blank to browse everywhere (your city still sorts first).
+        ntrp_min: Min NTRP
+        ntrp_max: Max NTRP
+        play_format: Format
+        play_style: Style
+        any: Any
+        submit: Search
   player_statistics:
     title: "%{name} — Statistics"
     empty: No statistics available yet.
@@ -472,22 +593,26 @@ en:
       dismiss: Hide
       progress: "%{done} of %{total} done"
       items:
+        name:
+          title: Add your display name
+          description: Other players see this on your profile and in games.
+          action: Add name
         city:
           title: Add your city
           description: Games near you come first, and the time is shown in your zone.
           action: Add city
-        telegram:
-          title: Connect Telegram
-          description: Invitations and reminders reach you in the bot instead of email.
-          action: Connect Telegram
-        sport:
-          title: Pick your sport and level
-          description: We suggest games that match what you play.
-          action: Fill profile
-        game:
-          title: Join a game or create your own
-          description: The whole point — get on court this week.
-          action: Create game
+        ntrp:
+          title: Add your NTRP rating
+          description: Self-reported only — helps others find a fair match.
+          action: Add NTRP
+        preferences:
+          title: Set playing preferences
+          description: Singles or doubles, casual or competitive.
+          action: Set preferences
+        availability:
+          title: Share general availability
+          description: Rough weekly windows when you like to play — not a calendar sync.
+          action: Add availability
     edit:
       title: Account
       my_games: My games
@@ -505,8 +630,39 @@ en:
       title: Profile
       name: Name
       email: Email
+      errors_heading: Please fix the following
+      avatar: Profile photo
+      avatar_hint: JPEG, PNG, or WebP up to 2 MB.
+      avatar_remove: Remove current photo
       skill_levels: Skill levels
-      skill_levels_hint: Set your skill level for each sport.
+      skill_levels_hint: Set your skill level for each sport. Legacy levels stay as you set them.
+      ntrp_rating: NTRP rating
+      ntrp_unset: Not set
+      ntrp_hint: Self-reported only — not USTA-verified.
+      play_formats: Formats
+      play_format:
+        singles: Singles
+        doubles: Doubles
+      play_styles: Play style
+      play_style:
+        casual: Casual
+        competitive: Competitive
+      availability: General availability
+      availability_hint: Pick rough weekly windows. This is not a booking calendar.
+      availability_day: Day
+      availability_notes: Notes (optional)
+      availability_day_name:
+        mon: Monday
+        tue: Tuesday
+        wed: Wednesday
+        thu: Thursday
+        fri: Friday
+        sat: Saturday
+        sun: Sunday
+      availability_period:
+        morning: Morning
+        afternoon: Afternoon
+        evening: Evening
       coach: I am a coach
       coach_hint: Tick if you coach — this helps others find and hire coaches in the
         future.
@@ -520,6 +676,25 @@ en:
       about_me: About me
       about_me_placeholder: Tell others a bit about yourself…
       no_city_matches: No matches.
+      privacy: Profile privacy
+      profile_visibility: Who can see your profile
+      profile_visibility_hint: Private is only you. Members requires sign-in. Public is visible without login.
+      visibility:
+        private: Private
+        members: Members
+        public: Public
+      show_stats_on_profile: Show my statistics on my profile
+      show_telegram_on_profile: Show my Telegram handle on my profile
+      accepts_match_invitations: Allow other members to invite me to play
+    show:
+      anonymous_name: Player
+      coach_badge: Coach
+      edit_profile: Edit profile
+      playing: Playing
+      not_set: Not set
+      ntrp_value: "%{rating} NTRP (self-reported)"
+      telegram: Telegram
+      statistics: Statistics
     security:
       title: Security
       verification_title: Account verification recommended

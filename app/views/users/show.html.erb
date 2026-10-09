@@ -1,0 +1,100 @@
+<% display_name = @user.name.presence || t("users.show.anonymous_name") %>
+<% content_for :title, display_name %>
+
+<div class="mx-auto max-w-3xl space-y-6 px-4 py-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+    <%= user_avatar_tag(@user, size: 120, class: "h-28 w-28 shrink-0 rounded-full object-cover") %>
+    <div class="min-w-0 space-y-2">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= display_name %></h1>
+      <% if @user.city_name.present? %>
+        <p class="text-sm text-gray-600 dark:text-slate-400"><%= @user.city_name %></p>
+      <% end %>
+      <% if @user.coach? %>
+        <p class="text-sm font-medium text-indigo-700 dark:text-indigo-300"><%= t("users.show.coach_badge") %></p>
+      <% end %>
+      <div class="flex flex-wrap gap-3">
+        <% if current_user == @user %>
+          <%= link_to t("users.show.edit_profile"), profile_account_path, class: "inline-block text-sm text-indigo-600 hover:underline dark:text-indigo-400" %>
+        <% elsif current_user && @user.invitable_by?(current_user) %>
+          <%= link_to t("match_invitations.actions.invite"), new_user_match_invitation_path(@user), class: "inline-flex rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <section class="space-y-2">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("users.show.playing") %></h2>
+    <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400"><%= t("users.profile.ntrp_rating") %></dt>
+        <dd class="text-sm text-gray-800 dark:text-slate-200">
+          <% if @user.ntrp_display %>
+            <%= t("users.show.ntrp_value", rating: @user.ntrp_display) %>
+            <span class="block text-xs text-gray-500 dark:text-slate-400"><%= t("users.profile.ntrp_hint") %></span>
+          <% else %>
+            <%= t("users.show.not_set") %>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400"><%= t("users.profile.play_formats") %></dt>
+        <dd class="text-sm text-gray-800 dark:text-slate-200">
+          <% if @user.play_formats.to_a.any? %>
+            <%= @user.play_formats.map { |f| t("users.profile.play_format.#{f}") }.join(", ") %>
+          <% else %>
+            <%= t("users.show.not_set") %>
+          <% end %>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400"><%= t("users.profile.play_styles") %></dt>
+        <dd class="text-sm text-gray-800 dark:text-slate-200">
+          <% if @user.play_styles.to_a.any? %>
+            <%= @user.play_styles.map { |s| t("users.profile.play_style.#{s}") }.join(", ") %>
+          <% else %>
+            <%= t("users.show.not_set") %>
+          <% end %>
+        </dd>
+      </div>
+      <% if @user.show_telegram_on_profile? && @user.telegram_handle.present? %>
+        <div>
+          <dt class="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400"><%= t("users.show.telegram") %></dt>
+          <dd class="text-sm text-gray-800 dark:text-slate-200"><%= @user.telegram_handle %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </section>
+
+  <% if @user.availability_present? %>
+    <section class="space-y-2">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("users.profile.availability") %></h2>
+      <ul class="space-y-1 text-sm text-gray-800 dark:text-slate-200">
+        <% User::AVAILABILITY_DAYS.each do |day| %>
+          <% periods = @user.availability_for(day) %>
+          <% next if periods.empty? %>
+          <li>
+            <span class="font-medium"><%= t("users.profile.availability_day_name.#{day}") %>:</span>
+            <%= periods.map { |p| t("users.profile.availability_period.#{p}") }.join(", ") %>
+          </li>
+        <% end %>
+      </ul>
+      <% if @user.availability_notes.present? %>
+        <p class="text-sm text-gray-600 dark:text-slate-400"><%= @user.availability_notes %></p>
+      <% end %>
+    </section>
+  <% end %>
+
+  <% if @user.about_me.present? %>
+    <section class="space-y-2">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("users.profile.about_me") %></h2>
+      <p class="whitespace-pre-wrap text-sm text-gray-800 dark:text-slate-200"><%= @user.about_me %></p>
+    </section>
+  <% end %>
+
+  <% if @show_stats && @player_statistic %>
+    <section class="space-y-2">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("users.show.statistics") %></h2>
+      <%= render "player_statistics/summary", user: @user, stats: @player_statistic, recent_matches: [], names_by_id: {} %>
+    </section>
+  <% end %>
+</div>

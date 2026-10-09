@@ -4,8 +4,47 @@ class UsersController < ApplicationController
   CITY_SEARCH_DEFAULT_LIMIT = 5
   CITY_SEARCH_MAX_LIMIT = 20
   USER_SEARCH_LIMIT = 8
+  AVATAR_SIZE_MIN = 40
+  AVATAR_SIZE_MAX = 320
+  AVATAR_SIZE_DEFAULT = 160
 
   before_action :authenticate_user!
+  skip_before_action :authenticate_user!, only: %i[show avatar]
+
+  def show
+    @user = User.find(params[:id])
+    unless @user.profile_visible_to?(current_user)
+      if @user.profile_visibility_members? && !user_signed_in? && @user.community_profile_eligible?
+        return authenticate_user!
+      end
+
+      return head :not_found
+    end
+
+    @show_stats = @user.show_stats_on_profile? && (@user.player_statistic.present?)
+    @player_statistic = @user.player_statistic if @show_stats
+    @meta_robots = "noindex, follow" unless @user.profile_visibility_public?
+  end
+
+  def avatar
+    @user = User.find(params[:id])
+    return head :not_found unless @user.profile_visible_to?(current_user)
+    return head :not_found unless @user.avatar.attached?
+
+    size = params[:size].to_i
+    size = AVATAR_SIZE_DEFAULT unless size.between?(AVATAR_SIZE_MIN, AVATAR_SIZE_MAX)
+    variant = @user.avatar_variant(size: size)
+    return head :not_found unless variant
+
+    blob = @user.avatar.blob
+    expires_in 1.hour, public: @user.profile_visibility_public?
+    send_data variant.download,
+              type: blob.content_type,
+              disposition: "inline",
+              filename: "avatar-#{@user.id}.#{blob.filename.extension}"
+  rescue ActiveStorage::FileNotFoundError, ActiveStorage::InvariableError
+    head :not_found
+  end
 
   def edit
     @user = current_user
@@ -49,6 +88,18 @@ class UsersController < ApplicationController
     if selected_city
       user_attrs["city_name"] = selected_city.canonical_name
       user_attrs["timezone"] = selected_city.rails_timezone if selected_city.rails_timezone.present?
+      user_attrs["city_id"] = selected_city.id
+    end
+
+    if section == "profile"
+      user_attrs["play_formats"] = Array(user_params[:play_formats]).map(&:to_s).reject(&:blank?)
+      user_attrs["play_styles"] = Array(user_params[:play_styles]).map(&:to_s).reject(&:blank?)
+      user_attrs["availability"] = normalize_availability_params(user_params[:availability])
+      user_attrs["ntrp_rating"] = user_params[:ntrp_rating].presence
+    end
+
+    if ActiveModel::Type::Boolean.new.cast(params[:remove_avatar])
+      @user.avatar.purge_later if @user.avatar.attached?
     end
 
     if court_preferences_submitted
@@ -116,7 +167,7 @@ class UsersController < ApplicationController
 
   def clear_city
     @user = current_user
-    @user.update(timezone: nil, city_name: nil)
+    @user.update(timezone: nil, city_name: nil, city_id: nil)
     redirect_to profile_account_path, notice: "City cleared"
   end
 
@@ -210,10 +261,36 @@ class UsersController < ApplicationController
       :court_preferences_note,
       :notify_nearby,
       :notification_channel,
+      :ntrp_rating,
+      :profile_visibility,
+      :show_stats_on_profile,
+      :show_telegram_on_profile,
+      :accepts_match_invitations,
+      :avatar,
       favorite_court_ids: [],
       preferred_sports: [],
-      skill_levels: {} # permit JSON object
+      play_formats: [],
+      play_styles: [],
+      skill_levels: {},
+      availability: [
+        :notes,
+        { mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] }
+      ]
     )
+  end
+
+  def normalize_availability_params(raw)
+    raw = raw.respond_to?(:to_unsafe_h) ? raw.to_unsafe_h : raw.to_h
+    result = {}
+
+    User::AVAILABILITY_DAYS.each do |day|
+      periods = Array(raw[day]).map(&:to_s).select { |period| User::AVAILABILITY_PERIODS.include?(period) }.uniq
+      result[day] = periods if periods.any?
+    end
+
+    notes = raw["notes"].to_s.strip
+    result["notes"] = notes.truncate(User::AVAILABILITY_NOTES_MAX) if notes.present?
+    result
   end
 
   def prepare_notifications_form_state

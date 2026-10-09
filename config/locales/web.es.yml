@@ -26,10 +26,131 @@ es:
     reject: Rechazar
     remove: Eliminar
     search: Buscar
+    reset: Restablecer
     prev: Anterior
     next: Siguiente
     close: Cerrar
     not_specified: Sin especificar
+  match_invitations:
+    actions:
+      invite: Invitar a jugar
+      accept: Aceptar
+      decline: Rechazar
+      cancel: Cancelar
+      coordinate: Programar
+      confirm: Confirmar horario
+    status:
+      pending: Pendiente
+      accepted: Aceptada
+      declined: Rechazada
+      canceled: Cancelada
+      expired: Caducada
+    scheduling:
+      none: —
+      needed: Falta programar
+      proposed: Horario propuesto
+      scheduled: Programada
+    index:
+      title: Invitaciones a jugar
+      subtitle: Propuestas de partido — no es un chat privado. Las invitaciones a un partido ya creado siguen en la página del partido.
+      received: Recibidas
+      sent: Enviadas
+      scheduling: Por programar
+      history: Historial reciente
+      empty_received: No tienes invitaciones pendientes.
+      empty_sent: No has enviado invitaciones pendientes.
+      empty_scheduling: Nada pendiente de programar.
+      empty_history: Aún no hay historial.
+    new:
+      title: Invitar a jugar
+      subtitle: "Enviar una propuesta a %{name}"
+    show:
+      title: Invitación
+      back: Volver a invitaciones
+    form:
+      play_format: Formato
+      proposed_at: Fecha y hora
+      proposed_at_hint: Si incluyes una hora futura al invitar, aceptar confirma ese horario y crea el partido. Si no, programáis después.
+      court: Pista (opcional)
+      court_blank: Sin pista todavía
+      message: Mensaje
+      proposal_note: Nota (opcional)
+      propose_title: Proponer un horario
+      change_proposal: Cambiar propuesta
+      submit: Enviar invitación
+      submit_proposal: Enviar propuesta
+    card:
+      view_game: Abrir partido
+      your_turn: Te toca confirmar
+      waiting_for_other: Esperando al otro jugador
+      doubles_slots:
+        one: "%{count} plaza más de dobles libre"
+        other: "%{count} plazas más de dobles libres"
+    flash:
+      created: Invitación enviada.
+      accepted: Invitación aceptada.
+      accepted_with_game: Invitación aceptada — partido creado.
+      accepted_needs_schedule: Invitación aceptada — elegid un horario juntos.
+      declined: Invitación rechazada.
+      canceled: Invitación cancelada.
+      proposal_sent: Propuesta de horario enviada.
+      scheduled: Horario confirmado — partido creado.
+      stale_proposal: Esa propuesta cambió — revisa la última.
+      cannot_confirm_own: Espera a que el otro jugador confirme.
+      invalid_time: Elige una fecha y hora futuras válidas.
+      invalid_court: Esa pista no está disponible.
+      already_scheduled: Esta invitación ya está programada.
+      not_pending: Esa invitación ya no está pendiente.
+      unauthorized: No puedes hacer eso.
+      failed: No se pudo actualizar la invitación.
+    mail:
+      view: Abrir invitación
+      created:
+        subject: Nueva invitación en GetCourt
+        body: "%{name} te invita a jugar %{format}. Abre GetCourt para responder."
+      accepted:
+        subject: Aceptaron tu invitación
+        body: "%{name} aceptó tu invitación de %{format}."
+      declined:
+        subject: Rechazaron tu invitación
+        body: "%{name} rechazó tu invitación de %{format}."
+      canceled:
+        subject: Invitación cancelada
+        body: "%{name} canceló su invitación de %{format}."
+      proposal_submitted:
+        subject: Propuesta de horario en GetCourt
+        body: "%{name} propuso %{when} para vuestro partido de %{format}."
+      proposal_changed:
+        subject: Propuesta de horario actualizada
+        body: "%{name} cambió la propuesta a %{when} para vuestro partido de %{format}."
+      scheduled:
+        subject: Partido programado en GetCourt
+        body: "Vuestro partido de %{format} con %{name} está programado%{when}."
+      scheduling_reminder:
+        subject: ¿Todavía falta un horario?
+        body: "Tú y %{name} aceptasteis una invitación de %{format} pero aún no habéis programado."
+  players:
+    index:
+      title: Buscar jugadores
+      subtitle: Miembros que comparten su perfil. Las cuentas privadas o incompletas no aparecen.
+      count:
+        one: 1 jugador
+        few: "%{count} jugadores"
+        many: "%{count} jugadores"
+        other: "%{count} jugadores"
+      empty_title: Ningún jugador coincide con estos filtros
+      empty_body: Prueba otra ciudad o amplía el rango NTRP. Los perfiles privados nunca aparecen aquí.
+      availability_summary: "Suele estar libre: %{days}"
+      filters:
+        city: Ciudad / zona
+        city_placeholder: p. ej. Madrid
+        city_hint: Elige una ciudad de la lista. En blanco se listan todos (tu ciudad sigue primero).
+        ntrp_min: NTRP mín.
+        ntrp_max: NTRP máx.
+        play_format: Formato
+        play_style: Estilo
+        any: Cualquiera
+        submit: Buscar
   player_statistics:
     title: "%{name} — Estadísticas"
     empty: Todavía no hay estadísticas.
@@ -473,22 +594,26 @@ es:
       dismiss: Ocultar
       progress: "%{done} de %{total}"
       items:
+        name:
+          title: Añade tu nombre visible
+          description: Los demás lo ven en tu perfil y en los partidos.
+          action: Añadir nombre
         city:
           title: Añade tu ciudad
           description: Los partidos cercanos van primero y la hora sale en tu zona.
           action: Añadir ciudad
-        telegram:
-          title: Conecta Telegram
-          description: Las invitaciones y los recordatorios llegan al bot, no al correo.
-          action: Conectar Telegram
-        sport:
-          title: Elige deporte y nivel
-          description: Te proponemos partidos acordes a lo que juegas.
-          action: Completar perfil
-        game:
-          title: Únete a un partido o crea el tuyo
-          description: "De esto se trata: pisar la pista esta semana."
-          action: Crear partido
+        ntrp:
+          title: Añade tu nivel NTRP
+          description: Solo autodeclarado — ayuda a encontrar rivales justos.
+          action: Añadir NTRP
+        preferences:
+          title: Define preferencias de juego
+          description: Individual o dobles, casual o competitivo.
+          action: Definir preferencias
+        availability:
+          title: Comparte disponibilidad general
+          description: Franjas semanales aproximadas — no es sincronización de calendario.
+          action: Añadir disponibilidad
     edit:
       title: Cuenta
       my_games: Mis partidos
@@ -506,8 +631,39 @@ es:
       title: Perfil
       name: Nombre
       email: Email
+      errors_heading: Corrige lo siguiente
+      avatar: Foto de perfil
+      avatar_hint: JPEG, PNG o WebP de hasta 2 MB.
+      avatar_remove: Quitar la foto actual
       skill_levels: Niveles de juego
-      skill_levels_hint: Indica tu nivel para cada deporte.
+      skill_levels_hint: Indica tu nivel para cada deporte. Los valores antiguos no se reescriben solos.
+      ntrp_rating: Nivel NTRP
+      ntrp_unset: Sin indicar
+      ntrp_hint: Solo autodeclarado — no verificado por la USTA.
+      play_formats: Formatos
+      play_format:
+        singles: Individuales
+        doubles: Dobles
+      play_styles: Estilo de juego
+      play_style:
+        casual: Casual
+        competitive: Competitivo
+      availability: Disponibilidad general
+      availability_hint: Marca franjas semanales aproximadas. No es un calendario de reservas.
+      availability_day: Día
+      availability_notes: Notas (opcional)
+      availability_day_name:
+        mon: Lunes
+        tue: Martes
+        wed: Miércoles
+        thu: Jueves
+        fri: Viernes
+        sat: Sábado
+        sun: Domingo
+      availability_period:
+        morning: Mañana
+        afternoon: Tarde
+        evening: Noche
       coach: Soy entrenador
       coach_hint: 'Márcalo si entrenas: ayuda a que otros encuentren y contraten entrenadores.'
       city: Ciudad
@@ -520,6 +676,25 @@ es:
       about_me: Sobre mí
       about_me_placeholder: Cuenta algo sobre ti…
       no_city_matches: Sin resultados.
+      privacy: Privacidad del perfil
+      profile_visibility: Quién puede ver tu perfil
+      profile_visibility_hint: Privado solo tú. Miembros requiere iniciar sesión. Público sin login.
+      visibility:
+        private: Privado
+        members: Miembros
+        public: Público
+      show_stats_on_profile: Mostrar mis estadísticas en el perfil
+      show_telegram_on_profile: Mostrar mi usuario de Telegram en el perfil
+      accepts_match_invitations: Permitir que otros miembros me inviten a jugar
+    show:
+      anonymous_name: Jugador
+      coach_badge: Entrenador
+      edit_profile: Editar perfil
+      playing: Juego
+      not_set: Sin indicar
+      ntrp_value: "%{rating} NTRP (autodeclarado)"
+      telegram: Telegram
+      statistics: Estadísticas
     security:
       title: Seguridad
       verification_title: Se recomienda verificar la cuenta

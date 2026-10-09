@@ -1,0 +1,60 @@
+<% content_for :meta_robots, "noindex, follow" %>
+
+<div class="mx-auto max-w-3xl space-y-6 px-4 py-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= t("match_invitations.index.title") %></h1>
+    <p class="mt-1 text-sm text-gray-600 dark:text-slate-400"><%= t("match_invitations.index.subtitle") %></p>
+  </div>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("match_invitations.index.received") %></h2>
+    <% if @received_pending.any? %>
+      <ul class="space-y-3">
+        <% @received_pending.each do |invitation| %>
+          <%= render "match_invitations/card", invitation: invitation, perspective: :received %>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/10 dark:text-slate-400"><%= t("match_invitations.index.empty_received") %></p>
+    <% end %>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("match_invitations.index.sent") %></h2>
+    <% if @sent_pending.any? %>
+      <ul class="space-y-3">
+        <% @sent_pending.each do |invitation| %>
+          <%= render "match_invitations/card", invitation: invitation, perspective: :sent %>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/10 dark:text-slate-400"><%= t("match_invitations.index.empty_sent") %></p>
+    <% end %>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("match_invitations.index.scheduling") %></h2>
+    <% if @scheduling.any? %>
+      <ul class="space-y-3">
+        <% @scheduling.each do |invitation| %>
+          <%= render "match_invitations/card", invitation: invitation, perspective: :scheduling %>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/10 dark:text-slate-400"><%= t("match_invitations.index.empty_scheduling") %></p>
+    <% end %>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100"><%= t("match_invitations.index.history") %></h2>
+    <% if @history.any? %>
+      <ul class="space-y-3">
+        <% @history.each do |invitation| %>
+          <%= render "match_invitations/card", invitation: invitation, perspective: :history %>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/10 dark:text-slate-400"><%= t("match_invitations.index.empty_history") %></p>
+    <% end %>
+  </section>
+</div>
