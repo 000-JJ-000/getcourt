@@ -30,17 +30,30 @@ Rails.application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = true
 
-  # Trust only private/loopback proxies by default. Never treat arbitrary client
-  # X-Forwarded-For as authoritative. Operators behind Cloudflare (or other CDNs)
-  # must list those proxy CIDRs in TRUSTED_PROXIES (comma-separated).
+  # Trusted proxies control which peer addresses may set X-Forwarded-* for
+  # request.ip / Rack::Attack. Default: loopback only.
+  #
+  # Operator must set TRUSTED_PROXIES to the actual reverse-proxy / CDN hop(s):
+  #   - Host Caddy/nginx on 127.0.0.1 → often no extra CIDRs needed
+  #   - Proxy container on Compose bridge → that bridge CIDR or proxy IP
+  #   - Cloudflare (or other CDN) → their published proxy CIDRs
+  #
+  # Do not default-trust all RFC1918: any peer that can reach Rails from a
+  # private IP could then spoof X-Forwarded-For and dilute rate limits.
+  # Opt-in only for tightly firewalled Compose-only networks:
+  #   TRUST_PRIVATE_NETWORK_PROXIES=1
   require "ipaddr"
   trusted = [
     IPAddr.new("127.0.0.0/8"),
-    IPAddr.new("::1"),
-    IPAddr.new("10.0.0.0/8"),
-    IPAddr.new("172.16.0.0/12"),
-    IPAddr.new("192.168.0.0/16")
+    IPAddr.new("::1")
   ]
+  if ActiveModel::Type::Boolean.new.cast(ENV.fetch("TRUST_PRIVATE_NETWORK_PROXIES", "0"))
+    trusted.concat([
+      IPAddr.new("10.0.0.0/8"),
+      IPAddr.new("172.16.0.0/12"),
+      IPAddr.new("192.168.0.0/16")
+    ])
+  end
   ENV.fetch("TRUSTED_PROXIES", "").split(",").each do |cidr|
     cidr = cidr.strip
     next if cidr.blank?

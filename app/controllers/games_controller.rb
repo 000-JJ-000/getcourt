@@ -1,8 +1,10 @@
 class GamesController < ApplicationController
   include LocationFilters
+  include GameAccess
 
   before_action :handle_mark_not_happened, only: [ :show ]
-  before_action :set_game, only: %i[show edit update destroy toggle_urgent_player_search accept_coach_invitation decline_coach_invitation]
+  before_action :set_game, only: %i[show edit update destroy toggle_urgent_player_search accept_coach_invitation decline_coach_invitation cancel_peer]
+  before_action :authorize_game_visible!, only: %i[show edit update destroy toggle_urgent_player_search accept_coach_invitation decline_coach_invitation cancel_peer]
   before_action :authorize_manage_game!, only: %i[edit update destroy toggle_urgent_player_search]
   before_action :prepare_coaches, only: %i[new create edit update]
   before_action :prepare_training_blocks, only: %i[new create edit update]
@@ -74,11 +76,13 @@ class GamesController < ApplicationController
 
   def new
     @game = Game.new
+    assign_community_from_params!(@game)
   end
 
   def create
     gp = sanitized_game_params
     @game = Game.new(gp.merge(user: current_user))
+    assign_community_from_params!(@game)
     @new_training_blocks = build_inline_training_blocks
 
     if inline_training_blocks_valid? && @game.save
@@ -86,6 +90,9 @@ class GamesController < ApplicationController
       @game.ensure_prebookings_for_next_weeks if @game.prebooking_enabled?
       apply_training_plan
       coaches_awaiting_invitation.each { |coach| deliver_coach_invitation(coach) }
+      if @game.community_id.present? && !@game.invite_only?
+        CommunityNotifyJob.perform_later("game_announced", @game.community_id, @game.id)
+      end
       redirect_to @game, notice: "Game was successfully created."
     else
       @game.validate
@@ -119,6 +126,16 @@ class GamesController < ApplicationController
   def destroy
     @game.destroy
     redirect_to games_url, notice: "Game was successfully destroyed."
+  end
+
+  def cancel_peer
+    return head :unauthorized unless current_user
+
+    @game.cancel_peer_match!(by: current_user)
+    MatchResultNotifyJob.perform_later(@game.id, nil, "peer_canceled")
+    redirect_to invitation_redirect_after_cancel, notice: t("games.flash.peer_canceled")
+  rescue ArgumentError => e
+    redirect_to @game, alert: e.message == "unauthorized" ? t("games.flash.unauthorized") : t("games.flash.peer_cancel_failed")
   end
 
   def accept_coach_invitation
@@ -310,6 +327,11 @@ class GamesController < ApplicationController
     @game = Game.find(params[:id])
   end
 
+  def invitation_redirect_after_cancel
+    invitation = MatchInvitation.involving(current_user).find_by(game_id: @game.id)
+    invitation ? invitation_path(invitation) : game_path(@game)
+  end
+
   def sort_games_for_user(games)
     return games.sort_by { |game| time_sort_key(game) } unless current_user&.city_name.present?
 
@@ -484,6 +506,19 @@ class GamesController < ApplicationController
     gp["surface"] = gp["surface"].presence if gp.key?("surface")
     gp["environment"] = gp["environment"].presence if gp.key?("environment")
     gp
+  end
+
+  # Community-first create: only active members (or admins) may preassociate.
+  # Invite-only peer matches never inherit a community board listing.
+  def assign_community_from_params!(game)
+    raw = params[:community_id].presence || params.dig(:game, :community_id).presence
+    return if raw.blank?
+
+    community = Community.find_by(slug: raw) || Community.find_by(id: raw)
+    return unless community
+    return unless community.active_member?(current_user) || current_user&.admin?
+
+    game.community = community
   end
 
   # Календарь в форме отдаёт список отмеченных дат — он и есть расписание. Игра

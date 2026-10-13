@@ -1,5 +1,8 @@
 class GameMediaController < ApplicationController
+  include GameAccess
+
   before_action :set_game
+  before_action :authorize_game_visible!
 
   # Прикладывать может организатор, админ и любой записавшийся участник:
   # снимает обычно не тот, кто игру создал.

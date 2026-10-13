@@ -1,0 +1,54 @@
+<% content_for :meta_robots, "noindex, follow" %>
+
+<div class="mx-auto max-w-3xl space-y-6 px-4 py-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= t("communities.index.title") %></h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-slate-400"><%= t("communities.index.subtitle") %></p>
+    </div>
+    <%= link_to t("communities.index.create"), new_community_path, class: "rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700" %>
+  </div>
+
+  <%= form_with url: communities_path, method: :get, local: true, class: "grid gap-3 rounded-lg border bg-white p-4 dark:border-white/10 dark:bg-slate-800/80 sm:grid-cols-4" do %>
+    <div class="sm:col-span-2">
+      <%= label_tag :q, t("communities.index.filters.q"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= text_field_tag :q, @applied_filters[:q], placeholder: t("communities.index.filters.q_placeholder"), class: "mt-1 w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+    <div>
+      <%= label_tag :city_name, t("communities.index.filters.city"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= text_field_tag :city_name, @applied_filters[:city_name], placeholder: t("communities.index.filters.city_placeholder"), class: "mt-1 w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+    <div>
+      <%= label_tag :play_focus, t("communities.index.filters.play_focus"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= select_tag :play_focus, options_for_select([[t("communities.index.filters.any"), ""]] + Community::PLAY_FOCUSES.map { |f| [t("communities.play_focus.#{f}"), f] }, @applied_filters[:play_focus]), class: "mt-1 w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+    <div class="sm:col-span-4">
+      <%= submit_tag t("communities.index.filters.submit"), class: "rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 cursor-pointer" %>
+    </div>
+  <% end %>
+
+  <% if @communities.any? %>
+    <ul class="space-y-3">
+      <% @communities.each do |community| %>
+        <li class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-slate-800/80">
+          <%= link_to community.name, community_path(community), class: "text-lg font-semibold text-indigo-700 hover:underline dark:text-indigo-300" %>
+          <p class="mt-1 text-sm text-gray-600 dark:text-slate-400">
+            <%= community.city_name.presence || "—" %>
+            · <%= t("communities.index.members", count: community.member_count) %>
+            <% if community.play_focus.present? %>
+              · <%= t("communities.play_focus.#{community.play_focus}") %>
+            <% end %>
+          </p>
+          <% if community.directory_blurb.present? %>
+            <p class="mt-2 text-sm text-gray-700 dark:text-slate-300"><%= community.directory_blurb %></p>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+    <% if @pagy && @pagy.pages > 1 %>
+      <div class="pt-2"><%== pagy_nav(@pagy) %></div>
+    <% end %>
+  <% else %>
+    <p class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/10 dark:text-slate-400"><%= t("communities.index.empty") %></p>
+  <% end %>
+</div>

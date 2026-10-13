@@ -1,4 +1,6 @@
 class PlayerStatisticsController < ApplicationController
+  include GameAccess
+
   before_action :set_user, except: :create_for_game
 
   def show
@@ -21,6 +23,8 @@ class PlayerStatisticsController < ApplicationController
 
   def create_for_game
     game = Game.find(params[:game_id])
+    authorize_game_visible!(game)
+    return redirect_to game_path(game), alert: t("games.flash.canceled_locked") if game.canceled?
 
     allowed = allowed_to_fill_stats?(game)
     started = game_started?(game)
@@ -95,9 +99,11 @@ class PlayerStatisticsController < ApplicationController
         group_id = m[:group_id].to_s.presence
         if group_id && sync_match_group(game, group_id, team_a_ids, team_b_ids, team_a_guests, team_b_guests, score, winner)
           saved_any = true
+          notify_result_submitted!(game, group_id)
         else
           upsert_matches_for_teams(game, team_a_ids, team_b_ids, team_a_guests, team_b_guests, score, winner, force_new: true)
           saved_any = true
+          notify_latest_pending_group!(game)
         end
       end
 
@@ -106,7 +112,8 @@ class PlayerStatisticsController < ApplicationController
           notice: (saved_any ? "Statistics saved." : nil),
           alert: "A match is 1 vs 1 or 2 vs 2 — #{unbalanced_matches} match(es) were not saved."
       elsif saved_any
-        redirect_to game_path(game), notice: "Statistics saved."
+        notice = game.invite_only? ? t("match_results.flash.submitted_pending") : "Statistics saved."
+        redirect_to game_path(game), notice: notice
       else
         redirect_to game_path(game), alert: "No data to save."
       end
@@ -251,6 +258,20 @@ end
 
   def mode_for_teams(team_a_ids, team_b_ids, team_a_guests, team_b_guests)
     ((team_a_ids.size + team_a_guests.size) >= 2 || (team_b_ids.size + team_b_guests.size) >= 2) ? "doubles" : "singles"
+  end
+
+  def notify_result_submitted!(game, group_id)
+    return unless game.invite_only?
+
+    MatchResultNotifyJob.perform_later(game.id, group_id, "submitted")
+  end
+
+  def notify_latest_pending_group!(game)
+    return unless game.invite_only?
+
+    row = Match.where(game_id: game.id).order(updated_at: :desc).first
+    group_id = row&.stats.to_h["match_group_id"]
+    MatchResultNotifyJob.perform_later(game.id, group_id, "submitted") if group_id.present?
   end
 
   def increment_activity_for_game!(game)

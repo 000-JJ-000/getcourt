@@ -81,7 +81,7 @@ Terminate HTTPS at Caddy/nginx/Cloudflare Tunnel in front of `WEB_PORT` (default
 | Concern | Requirement |
 |---|---|
 | HTTPS | Proxy terminates TLS; Rails `force_ssl` + `assume_ssl` |
-| Client IP | Proxy sets `X-Forwarded-For` / `X-Forwarded-Proto`; Rails trusts only `TRUSTED_PROXIES` CIDRs (private defaults + your CDN) |
+| Client IP | Proxy sets `X-Forwarded-For` / `X-Forwarded-Proto`; Rails trusts loopback by default — set `TRUSTED_PROXIES` to your proxy/CDN CIDRs (see deployment.md) |
 | WebSockets | Forward `Upgrade` / `Connection` for Action Cable |
 | Rate limits | Rack::Attack uses `request.ip` after trusted-proxy stripping — wrong trust → shared/wrong buckets |
 | Cookies | Production session cookies are `Secure`, `HttpOnly`, `SameSite=Lax` |

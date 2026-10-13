@@ -20,4 +20,24 @@ class Match < ApplicationRecord
   def game_page_relevant?
     game.present? && game.covers_moment?(played_at)
   end
+
+  def result_status
+    PlayerStatistics::MatchResultStatus.status_for(stats)
+  end
+
+  def match_group_id
+    stats.to_h["match_group_id"]
+  end
+
+  def result_pending?
+    PlayerStatistics::MatchResultStatus.pending?(stats)
+  end
+
+  def result_disputed?
+    PlayerStatistics::MatchResultStatus.disputed?(stats)
+  end
+
+  def result_confirmed?
+    PlayerStatistics::MatchResultStatus.confirmed?(stats)
+  end
 end

@@ -1,5 +1,8 @@
 class ParticipationsController < ApplicationController
+  include GameAccess
+
   before_action :set_game, only: [ :create, :create_guest, :add_user, :destroy, :approve, :reject ]
+  before_action :authorize_game_visible!, only: [ :create, :create_guest, :add_user, :destroy, :approve, :reject ]
   before_action :authenticate_user!, only: [ :create_guest, :add_user, :destroy, :approve, :reject ]
 
   def create
@@ -13,6 +16,16 @@ class ParticipationsController < ApplicationController
         format.html { redirect_to new_session_path }
       end
       return
+    end
+
+    if @game.canceled?
+      return redirect_to(@game, alert: t("games.flash.canceled_locked"))
+    end
+
+    # Invite-only: strangers cannot self-join. Organizer adds players or Telegram
+    # invite creates a pending participation first (authorized view + join).
+    if @game.invite_only? && !can_manage_game? && !@game.participations.exists?(user_id: current_user.id)
+      return head :forbidden
     end
 
     existing = @game.participations.find_by(user: current_user)

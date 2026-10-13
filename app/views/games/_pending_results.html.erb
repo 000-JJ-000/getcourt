@@ -1,0 +1,32 @@
+<% return if game.training? || game.canceled? || !current_user %>
+<% pending_rows = Match.where(game_id: game.id).select(&:result_pending?).group_by(&:match_group_id) %>
+<% return if pending_rows.blank? %>
+
+<div class="mt-6 space-y-3 border-t pt-4 dark:border-white/10">
+  <h2 class="text-sm font-semibold text-gray-700 dark:text-slate-300"><%= t("match_results.pending_title") %></h2>
+  <% pending_rows.each do |group_id, rows| %>
+    <% sample = rows.first %>
+    <% stats = sample.stats.to_h %>
+    <% next if group_id.blank? %>
+    <div class="rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm dark:border-amber-400/20 dark:bg-amber-500/10">
+      <p class="font-medium text-gray-900 dark:text-slate-100">
+        <%= sample.score.presence || "—" %>
+        · <%= t("match_results.status.pending") %>
+      </p>
+      <% if PlayerStatistics::MatchResultStatus.can_confirm_or_dispute?(user: current_user, stats: stats) %>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <%= button_to t("match_results.actions.confirm"), confirm_game_match_result_path(game),
+                method: :post,
+                params: { group_id: group_id, result_updated_at: stats["result_updated_at"] },
+                class: "rounded-md bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700" %>
+          <%= button_to t("match_results.actions.dispute"), dispute_game_match_result_path(game),
+                method: :post,
+                params: { group_id: group_id, result_updated_at: stats["result_updated_at"] },
+                class: "rounded-md border border-red-300 px-3 py-1.5 text-red-700 hover:bg-red-50 dark:border-red-400/40 dark:text-red-200" %>
+        </div>
+      <% else %>
+        <p class="mt-1 text-gray-600 dark:text-slate-400"><%= t("match_results.waiting_confirm") %></p>
+      <% end %>
+    </div>
+  <% end %>
+</div>

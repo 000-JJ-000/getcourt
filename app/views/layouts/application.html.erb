@@ -111,6 +111,7 @@
           <%= link_to t("layout.nav.courts"), courts_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
           <% if user_signed_in? %>
             <%= link_to t("layout.nav.players"), players_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
+            <%= link_to t("layout.nav.communities"), communities_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
             <%= link_to t("layout.nav.invitations"), invitations_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
           <% end %>
           <%= link_to t("layout.nav.tennis_life"), tennis_life_path, class: "text-sm font-medium text-gray-700 hover:text-gray-900 transition dark:text-slate-300 dark:hover:text-white" %>
@@ -121,6 +122,7 @@
             <%= link_to t("layout.nav.coaches"), coaches_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <% if user_signed_in? %>
               <%= link_to t("layout.nav.players"), players_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+              <%= link_to t("layout.nav.communities"), communities_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
               <%= link_to t("layout.nav.invitations"), invitations_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <% end %>
             <%= link_to t("layout.nav.contacts"), contacts_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
@@ -277,6 +279,7 @@
             <%= link_to t("layout.nav.coaches"), coaches_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <% if user_signed_in? %>
               <%= link_to t("layout.nav.players"), players_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
+              <%= link_to t("layout.nav.communities"), communities_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
               <%= link_to t("layout.nav.invitations"), invitations_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>
             <% end %>
             <%= link_to t("layout.nav.contacts"), contacts_path, class: "block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-white/5" %>

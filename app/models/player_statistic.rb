@@ -277,6 +277,7 @@ class PlayerStatistic < ApplicationRecord
   def self.build_elo_event(event_matches)
     sample = event_matches.first
     stats = sample.stats.to_h
+    return unless PlayerStatistics::MatchResultStatus.counts_for_elo?(stats)
     return if guest_names_present?(stats)
 
     if sample.mode == "doubles"

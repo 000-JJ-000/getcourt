@@ -1,5 +1,8 @@
 class GameInvitationsController < ApplicationController
+  include GameAccess
+
   before_action :set_game
+  before_action :authorize_game_visible!
   before_action :authorize_manage_game!
 
   def create
@@ -87,11 +90,21 @@ class GameInvitationsController < ApplicationController
   end
 
   def deliver_invitation(user)
+    ensure_invite_only_pending_participation!(user)
     GameInvitationDelivery.new(
       game: @game,
       inviter: current_user,
       game_url: invitation_game_url(@game)
     ).deliver(user: user)
+  end
+
+  # Doubles recruitment for invite-only games: pending participation is the
+  # explicit grant that unlocks game#show without making the URL public.
+  def ensure_invite_only_pending_participation!(user)
+    return unless @game.invite_only?
+    return if @game.participations.exists?(user_id: user.id)
+
+    @game.participations.create!(user: user, status: "pending")
   end
 
   def invitation_game_url(game)

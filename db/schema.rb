@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_09_181000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_13_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "postgis"
@@ -124,6 +124,63 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_181000) do
     t.index ["coach_id"], name: "index_coach_prebookings_on_coach_id"
     t.index ["game_id", "coach_id", "date"], name: "index_coach_prebookings_on_game_id_and_coach_id_and_date", unique: true
     t.index ["game_id"], name: "index_coach_prebookings_on_game_id"
+  end
+
+  create_table "communities", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.text "description"
+    t.bigint "city_id"
+    t.string "city_name"
+    t.bigint "creator_id", null: false
+    t.string "visibility", default: "public", null: false
+    t.string "membership_policy", default: "open", null: false
+    t.decimal "ntrp_min", precision: 3, scale: 1
+    t.decimal "ntrp_max", precision: 3, scale: 1
+    t.string "play_focus"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["city_id"], name: "index_communities_on_city_id"
+    t.index ["city_name"], name: "index_communities_on_city_name"
+    t.index ["creator_id"], name: "index_communities_on_creator_id"
+    t.index ["slug"], name: "index_communities_on_slug", unique: true
+    t.index ["visibility"], name: "index_communities_on_visibility"
+    t.check_constraint "membership_policy::text = ANY (ARRAY['open'::character varying, 'approval'::character varying]::text[])", name: "communities_membership_policy_check"
+    t.check_constraint "play_focus IS NULL OR (play_focus::text = ANY (ARRAY['singles'::character varying, 'doubles'::character varying, 'both'::character varying]::text[]))", name: "communities_play_focus_check"
+    t.check_constraint "visibility::text = ANY (ARRAY['public'::character varying, 'private'::character varying]::text[])", name: "communities_visibility_check"
+  end
+
+  create_table "community_invitations", force: :cascade do |t|
+    t.bigint "community_id", null: false
+    t.bigint "inviter_id", null: false
+    t.bigint "invitee_id", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "responded_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["community_id", "invitee_id"], name: "index_community_invitations_pending_unique", unique: true, where: "((status)::text = 'pending'::text)"
+    t.index ["community_id"], name: "index_community_invitations_on_community_id"
+    t.index ["invitee_id"], name: "index_community_invitations_on_invitee_id"
+    t.index ["inviter_id"], name: "index_community_invitations_on_inviter_id"
+    t.index ["status"], name: "index_community_invitations_on_status"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'accepted'::character varying, 'declined'::character varying, 'revoked'::character varying, 'expired'::character varying]::text[])", name: "community_invitations_status_check"
+  end
+
+  create_table "community_memberships", force: :cascade do |t|
+    t.bigint "community_id", null: false
+    t.bigint "user_id", null: false
+    t.string "role", default: "member", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "responded_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["community_id", "user_id"], name: "index_community_memberships_on_community_and_user", unique: true
+    t.index ["community_id"], name: "index_community_memberships_on_community_id"
+    t.index ["status"], name: "index_community_memberships_on_status"
+    t.index ["user_id"], name: "index_community_memberships_on_user_id"
+    t.check_constraint "role::text = ANY (ARRAY['owner'::character varying, 'moderator'::character varying, 'member'::character varying]::text[])", name: "community_memberships_role_check"
+    t.check_constraint "status::text = ANY (ARRAY['active'::character varying, 'pending'::character varying, 'removed'::character varying]::text[])", name: "community_memberships_status_check"
   end
 
   create_table "court_ratings", force: :cascade do |t|
@@ -312,7 +369,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_181000) do
     t.boolean "with_coach", default: false, null: false
     t.string "guest_coach_name"
     t.boolean "invite_only", default: false, null: false
+    t.datetime "canceled_at"
+    t.bigint "community_id"
+    t.index ["canceled_at"], name: "index_games_on_canceled_at"
     t.index ["coach_id"], name: "index_games_on_coach_id"
+    t.index ["community_id"], name: "index_games_on_community_id"
     t.index ["court_id"], name: "index_games_on_court_id"
     t.index ["ends_on"], name: "index_games_on_ends_on"
     t.index ["invite_only"], name: "index_games_on_invite_only"
@@ -694,6 +755,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_181000) do
   add_foreign_key "api_tokens", "users"
   add_foreign_key "coach_prebookings", "games"
   add_foreign_key "coach_prebookings", "users", column: "coach_id"
+  add_foreign_key "communities", "cities"
+  add_foreign_key "communities", "users", column: "creator_id"
+  add_foreign_key "community_invitations", "communities"
+  add_foreign_key "community_invitations", "users", column: "invitee_id"
+  add_foreign_key "community_invitations", "users", column: "inviter_id"
+  add_foreign_key "community_memberships", "communities"
+  add_foreign_key "community_memberships", "users"
   add_foreign_key "court_ratings", "courts"
   add_foreign_key "court_ratings", "users"
   add_foreign_key "court_suggestions", "courts"
@@ -710,6 +778,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_09_181000) do
   add_foreign_key "game_scoreboards", "users"
   add_foreign_key "game_training_blocks", "games"
   add_foreign_key "game_training_blocks", "training_blocks"
+  add_foreign_key "games", "communities"
   add_foreign_key "games", "courts"
   add_foreign_key "games", "tournaments"
   add_foreign_key "games", "users"

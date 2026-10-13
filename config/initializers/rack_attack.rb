@@ -208,4 +208,34 @@ class Rack::Attack
   throttle("match_invitations/ip", limit: 30, period: 1.hour) do |request|
     request.ip if match_invitation_create?(request)
   end
+
+  def self.community_membership_create?(request)
+    return false unless request.post?
+
+    route = recognized_route(request)
+    route.present? && route[:controller] == "community_memberships" && route[:action] == "create"
+  end
+
+  def self.community_invitation_create?(request)
+    return false unless request.post?
+
+    route = recognized_route(request)
+    route.present? && route[:controller] == "community_invitations" && route[:action] == "create"
+  end
+
+  throttle("community_memberships/user", limit: 20, period: 1.hour) do |request|
+    request.session["user_id"] if community_membership_create?(request)
+  end
+
+  throttle("community_memberships/ip", limit: 40, period: 1.hour) do |request|
+    request.ip if community_membership_create?(request)
+  end
+
+  throttle("community_invitations/user", limit: 20, period: 1.hour) do |request|
+    request.session["user_id"] if community_invitation_create?(request)
+  end
+
+  throttle("community_invitations/ip", limit: 40, period: 1.hour) do |request|
+    request.ip if community_invitation_create?(request)
+  end
 end

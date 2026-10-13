@@ -1,4 +1,7 @@
 <%= form_with(model: game, local: true) do |form| %>
+  <% if game.community_id.present? %>
+    <%= hidden_field_tag :community_id, game.community.to_param %>
+  <% end %>
   <% if game.errors.any? %>
     <div id="error_explanation" class="mb-4 rounded-md bg-red-50 border border-red-200 p-4 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-300">
       <h2 class="font-semibold"><%= t("games.form.errors", count: game.errors.count) %></h2>

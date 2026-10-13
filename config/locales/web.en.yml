@@ -132,6 +132,175 @@ en:
       scheduling_reminder:
         subject: Still need a time to play?
         body: "You and %{name} accepted a %{format} invite but have not scheduled yet."
+  match_results:
+    pending_title: Results awaiting confirmation
+    waiting_confirm: Waiting for the opposing side to confirm.
+    actions:
+      confirm: Confirm result
+      dispute: Dispute
+    status:
+      pending: Pending confirmation
+      confirmed: Confirmed
+      disputed: Disputed
+    flash:
+      submitted_pending: Result submitted — waiting for opponent confirmation.
+      confirmed: Result confirmed.
+      disputed: Result disputed — submit a corrected score.
+      unauthorized: You cannot confirm that result.
+      stale: That result changed — review the latest one.
+      not_pending: That result is not awaiting confirmation.
+      failed: Could not update the result.
+    mail:
+      view: Open game
+      submitted:
+        subject: Match result awaiting confirmation
+        body: "A result was submitted for your game on %{date}. Confirm or dispute it in GetCourt."
+      confirmed:
+        subject: Match result confirmed
+        body: "The result for your game on %{date} is confirmed."
+      disputed:
+        subject: Match result disputed
+        body: "The result for your game on %{date} was disputed. Submit a corrected score."
+      peer_canceled:
+        subject: Peer match canceled
+        body: "Your scheduled peer match on %{date} was canceled."
+  match_history:
+    title: Match history
+    subtitle: Your recorded results — including pending confirmation.
+    empty: No matches recorded yet.
+    vs: vs
+    view_game: Open game
+    outcome:
+      win: Win
+      loss: Loss
+      draw: Draw
+  communities:
+    index:
+      title: Communities
+      subtitle: Local tennis groups — discover, join, and organize games together.
+      empty: No public communities match these filters.
+      create: Create a community
+      members:
+        one: "%{count} member"
+        other: "%{count} members"
+      filters:
+        q: Name
+        q_placeholder: Search by name
+        city: City / area
+        city_placeholder: e.g. Yekaterinburg
+        play_focus: Focus
+        any: Any
+        submit: Search
+    show:
+      members: Members
+      pending: Join requests
+      invitations: Pending invitations
+      invite_player: Invite a player
+      invite_placeholder: Search by name…
+      invite_only_hint: Invitation required to join
+      upcoming: Upcoming games
+      recent: Recent games
+      link_game: Link one of your games
+      create_game: Create a game
+      create_game_for: "Creating a game for %{name}"
+      unlink: Unlink
+      no_games: No community games yet.
+      edit: Community settings
+    invitations:
+      title: Community invitations
+      subtitle: Private community invites addressed to you.
+      empty: No pending community invitations.
+      from: "From %{name}"
+      expires: "Expires %{date}"
+      back_match: Match invitations
+    new:
+      title: Create a community
+    edit:
+      title: Edit community
+    form:
+      name: Name
+      description: Description
+      city_name: City / area
+      visibility: Visibility
+      membership_policy: Joining
+      play_focus: Focus
+      ntrp_min: Min NTRP
+      ntrp_max: Max NTRP
+      submit_create: Create
+      submit_update: Save
+    visibility:
+      public: Public
+      private: Private
+    membership_policy:
+      open: Open join
+      approval: Approval required
+    play_focus:
+      singles: Singles
+      doubles: Doubles
+      both: Singles & doubles
+    roles:
+      owner: Owner
+      moderator: Moderator
+      member: Member
+    actions:
+      join: Join
+      request: Request to join
+      leave: Leave
+      approve: Approve
+      decline: Decline
+      remove: Remove
+      promote: Make moderator
+      demote: Remove moderator
+      transfer: Transfer ownership
+      invite: Send invitation
+      accept_invite: Accept invitation
+      decline_invite: Decline
+      revoke_invite: Revoke
+    flash:
+      created: Community created.
+      updated: Community updated.
+      joined: You joined the community.
+      request_sent: Join request sent.
+      left: You left the community.
+      approved: Membership approved.
+      declined: Request declined.
+      removed: Member removed.
+      promoted: Moderator added.
+      demoted: Moderator removed.
+      transferred: Ownership transferred.
+      game_linked: Game linked to the community.
+      game_unlinked: Game unlinked.
+      game_link_failed: That game cannot be linked.
+      already_member: You already have a membership.
+      sole_owner: Transfer ownership before leaving.
+      unauthorized: You cannot do that.
+      failed: Could not update membership.
+      rate_limited: Too many communities created today — try again tomorrow.
+      invite_required: This private community requires an invitation.
+      invite_sent: Invitation sent.
+      invite_failed: Could not send that invitation.
+      invite_duplicate: An active invitation already exists for that player.
+      invite_accepted: You joined the community.
+      invite_declined: Invitation declined.
+      invite_revoked: Invitation revoked.
+      invite_not_pending: That invitation is no longer pending.
+    mail:
+      view: Open community
+      membership_requested:
+        subject: "Join request for %{name}"
+        body: "%{user} requested to join %{name}."
+      membership_approved:
+        subject: "Welcome to %{name}"
+        body: "Your request to join %{name} was approved."
+      game_announced:
+        subject: "New game in %{name}"
+        body: "A game on %{date} was linked to %{name}."
+      invitation_created:
+        subject: "Invitation to %{name}"
+        body: "%{user} invited you to join %{name}."
+      invitation_accepted:
+        subject: "%{user} joined %{name}"
+        body: "%{user} accepted an invitation to %{name}."
   players:
     index:
       title: Find players
@@ -274,7 +443,16 @@ en:
       live: Match in progress — open the scoreboard
   games:
     court_pending: Court not chosen yet
+    flash:
+      peer_canceled: Peer match canceled.
+      peer_cancel_failed: Could not cancel that match.
+      unauthorized: You cannot do that.
+      canceled_locked: This game was canceled — results cannot be recorded.
     show:
+      canceled_banner: This peer match was canceled.
+      peer_match_hint: Private peer match — only participants can view it.
+      cancel_peer: Cancel match
+      cancel_peer_confirm: Cancel this scheduled peer match for everyone?
       win_chances:
         title: Win chances
         mode:
@@ -616,6 +794,7 @@ en:
     edit:
       title: Account
       my_games: My games
+      match_history: Match history
       profile: Profile
       notifications: Telegram & notifications
       security: Security

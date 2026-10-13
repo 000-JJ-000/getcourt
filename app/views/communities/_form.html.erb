@@ -1,0 +1,45 @@
+<%= form_with model: community, local: true, class: "space-y-4" do |f| %>
+  <% if community.errors.any? %>
+    <div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200">
+      <%= community.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, t("communities.form.name"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+    <%= f.text_field :name, maxlength: Community::NAME_MAX, required: true, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+  </div>
+  <div>
+    <%= f.label :description, t("communities.form.description"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+    <%= f.text_area :description, rows: 4, maxlength: Community::DESCRIPTION_MAX, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+  </div>
+  <div>
+    <%= f.label :city_name, t("communities.form.city_name"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+    <%= f.text_field :city_name, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+  </div>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div>
+      <%= f.label :visibility, t("communities.form.visibility"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= f.select :visibility, Community::VISIBILITIES.map { |v| [t("communities.visibility.#{v}"), v] }, {}, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+    <div>
+      <%= f.label :membership_policy, t("communities.form.membership_policy"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= f.select :membership_policy, Community::MEMBERSHIP_POLICIES.map { |v| [t("communities.membership_policy.#{v}"), v] }, {}, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+  </div>
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div>
+      <%= f.label :play_focus, t("communities.form.play_focus"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= f.select :play_focus, Community::PLAY_FOCUSES.map { |v| [t("communities.play_focus.#{v}"), v] }, { include_blank: true }, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+    <div>
+      <%= f.label :ntrp_min, t("communities.form.ntrp_min"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= f.select :ntrp_min, User::NTRP_RATINGS.map { |r| [format("%.1f", r), r] }, { include_blank: true }, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+    <div>
+      <%= f.label :ntrp_max, t("communities.form.ntrp_max"), class: "block text-sm font-medium text-gray-700 dark:text-slate-300" %>
+      <%= f.select :ntrp_max, User::NTRP_RATINGS.map { |r| [format("%.1f", r), r] }, { include_blank: true }, class: "mt-1 block w-full rounded border px-3 py-2 dark:border-white/15 dark:bg-slate-700 dark:text-slate-100" %>
+    </div>
+  </div>
+  <%= f.submit community.persisted? ? t("communities.form.submit_update") : t("communities.form.submit_create"), class: "rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 cursor-pointer" %>
+<% end %>

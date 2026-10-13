@@ -47,9 +47,18 @@
     <% end %>
 
     <% if @invitation.game.present? %>
-      <%= link_to t("match_invitations.card.view_game"), game_path(@invitation.game), class: "inline-block text-sm text-indigo-600 hover:underline dark:text-indigo-400" %>
-      <% if @invitation.open_doubles_slots.positive? %>
-        <p class="text-sm text-gray-500 dark:text-slate-400"><%= t("match_invitations.card.doubles_slots", count: @invitation.open_doubles_slots) %></p>
+      <% if @invitation.game.canceled? %>
+        <p class="text-sm text-red-700 dark:text-red-300"><%= t("games.show.canceled_banner") %></p>
+      <% elsif @invitation.game.visible_to?(current_user) %>
+        <%= link_to t("match_invitations.card.view_game"), game_path(@invitation.game), class: "inline-block text-sm text-indigo-600 hover:underline dark:text-indigo-400" %>
+        <% if @invitation.open_doubles_slots.positive? %>
+          <p class="text-sm text-gray-500 dark:text-slate-400"><%= t("match_invitations.card.doubles_slots", count: @invitation.open_doubles_slots) %></p>
+        <% end %>
+        <% if @invitation.game.can_cancel_peer_match?(current_user) %>
+          <%= button_to t("games.show.cancel_peer"), cancel_peer_game_path(@invitation.game), method: :post,
+                form: { data: { turbo_confirm: t("games.show.cancel_peer_confirm") }, class: "mt-2" },
+                class: "rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50" %>
+        <% end %>
       <% end %>
     <% end %>
   </div>

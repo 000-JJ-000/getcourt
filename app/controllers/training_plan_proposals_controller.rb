@@ -1,7 +1,10 @@
 # Правки плана тренировки: предлагает участник, судьбу решает организатор, а
 # при голосовании — состав игры.
 class TrainingPlanProposalsController < ApplicationController
+  include GameAccess
+
   before_action :set_game
+  before_action :authorize_game_visible!
   before_action :set_proposal, except: :create
   before_action :authorize_team_member!, only: :create
   before_action :authorize_game_manager!, only: %i[update approve reject]

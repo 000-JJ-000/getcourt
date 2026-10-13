@@ -3,7 +3,13 @@
   <div class="flex items-center justify-between mb-6">
     <div>
       <h1 class="text-2xl font-semibold"><%= t("games.new.title") %></h1>
-      <p class="text-gray-600 dark:text-slate-400"><%= t("games.new.subtitle") %></p>
+      <p class="text-gray-600 dark:text-slate-400">
+        <% if @game.community.present? %>
+          <%= t("communities.show.create_game_for", name: @game.community.name) %>
+        <% else %>
+          <%= t("games.new.subtitle") %>
+        <% end %>
+      </p>
     </div>
     <div>
       <%= link_to t("games.show.back_to_games"), root_path, class: "block inline-flex items-center rounded-md border border-gray-300 dark:border-white/10 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-white/5 transition" %>

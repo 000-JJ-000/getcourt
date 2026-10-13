@@ -129,6 +129,175 @@ es:
       scheduling_reminder:
         subject: ¿Todavía falta un horario?
         body: "Tú y %{name} aceptasteis una invitación de %{format} pero aún no habéis programado."
+  match_results:
+    pending_title: Resultados pendientes de confirmación
+    waiting_confirm: Esperando confirmación del rival.
+    actions:
+      confirm: Confirmar resultado
+      dispute: Disputar
+    status:
+      pending: Pendiente de confirmación
+      confirmed: Confirmado
+      disputed: Disputado
+    flash:
+      submitted_pending: Resultado enviado — esperando confirmación del rival.
+      confirmed: Resultado confirmado.
+      disputed: Resultado disputado — envía un marcador corregido.
+      unauthorized: No puedes confirmar ese resultado.
+      stale: Ese resultado cambió — revisa el último.
+      not_pending: Ese resultado no espera confirmación.
+      failed: No se pudo actualizar el resultado.
+    mail:
+      view: Abrir partido
+      submitted:
+        subject: Resultado pendiente de confirmación
+        body: "Se envió un resultado de tu partido del %{date}. Confírmalo o dispútalo en GetCourt."
+      confirmed:
+        subject: Resultado confirmado
+        body: "El resultado de tu partido del %{date} está confirmado."
+      disputed:
+        subject: Resultado disputado
+        body: "El resultado de tu partido del %{date} fue disputado. Envía un marcador corregido."
+      peer_canceled:
+        subject: Partido entre jugadores cancelado
+        body: "Tu partido programado del %{date} fue cancelado."
+  match_history:
+    title: Historial de partidos
+    subtitle: Tus resultados registrados — también los pendientes de confirmación.
+    empty: Aún no hay partidos registrados.
+    vs: vs
+    view_game: Abrir partido
+    outcome:
+      win: Victoria
+      loss: Derrota
+      draw: Empate
+  communities:
+    index:
+      title: Comunidades
+      subtitle: Grupos locales de tenis — descubre, únete y organiza partidos.
+      empty: Ninguna comunidad pública coincide con estos filtros.
+      create: Crear una comunidad
+      members:
+        one: "%{count} miembro"
+        other: "%{count} miembros"
+      filters:
+        q: Nombre
+        q_placeholder: Buscar por nombre
+        city: Ciudad / zona
+        city_placeholder: p. ej. Madrid
+        play_focus: Enfoque
+        any: Cualquiera
+        submit: Buscar
+    show:
+      members: Miembros
+      pending: Solicitudes
+      invitations: Invitaciones pendientes
+      invite_player: Invitar a un jugador
+      invite_placeholder: Buscar por nombre…
+      invite_only_hint: Se necesita invitación para unirse
+      upcoming: Próximos partidos
+      recent: Partidos recientes
+      link_game: Vincular uno de tus partidos
+      create_game: Crear un partido
+      create_game_for: "Creando un partido para %{name}"
+      unlink: Desvincular
+      no_games: Aún no hay partidos de la comunidad.
+      edit: Ajustes de la comunidad
+    invitations:
+      title: Invitaciones a comunidades
+      subtitle: Invitaciones a comunidades privadas dirigidas a ti.
+      empty: No hay invitaciones pendientes.
+      from: "De %{name}"
+      expires: "Caduca %{date}"
+      back_match: Invitaciones a partidos
+    new:
+      title: Crear una comunidad
+    edit:
+      title: Editar comunidad
+    form:
+      name: Nombre
+      description: Descripción
+      city_name: Ciudad / zona
+      visibility: Visibilidad
+      membership_policy: Cómo unirse
+      play_focus: Enfoque
+      ntrp_min: NTRP mín.
+      ntrp_max: NTRP máx.
+      submit_create: Crear
+      submit_update: Guardar
+    visibility:
+      public: Pública
+      private: Privada
+    membership_policy:
+      open: Libre
+      approval: Requiere aprobación
+    play_focus:
+      singles: Individuales
+      doubles: Dobles
+      both: Individuales y dobles
+    roles:
+      owner: Propietario
+      moderator: Moderador
+      member: Miembro
+    actions:
+      join: Unirse
+      request: Solicitar unirse
+      leave: Salir
+      approve: Aprobar
+      decline: Rechazar
+      remove: Expulsar
+      promote: Hacer moderador
+      demote: Quitar moderador
+      transfer: Transferir propiedad
+      invite: Enviar invitación
+      accept_invite: Aceptar invitación
+      decline_invite: Rechazar
+      revoke_invite: Revocar
+    flash:
+      created: Comunidad creada.
+      updated: Comunidad actualizada.
+      joined: Te uniste a la comunidad.
+      request_sent: Solicitud enviada.
+      left: Saliste de la comunidad.
+      approved: Membresía aprobada.
+      declined: Solicitud rechazada.
+      removed: Miembro expulsado.
+      promoted: Moderador añadido.
+      demoted: Moderador quitado.
+      transferred: Propiedad transferida.
+      game_linked: Partido vinculado a la comunidad.
+      game_unlinked: Partido desvinculado.
+      game_link_failed: Ese partido no se puede vincular.
+      already_member: Ya tienes una membresía.
+      sole_owner: Transfiere la propiedad antes de salir.
+      unauthorized: No puedes hacer eso.
+      failed: No se pudo actualizar la membresía.
+      rate_limited: Has creado demasiadas comunidades hoy — prueba mañana.
+      invite_required: Esta comunidad privada requiere invitación.
+      invite_sent: Invitación enviada.
+      invite_failed: No se pudo enviar la invitación.
+      invite_duplicate: Ya existe una invitación activa para ese jugador.
+      invite_accepted: Te uniste a la comunidad.
+      invite_declined: Invitación rechazada.
+      invite_revoked: Invitación revocada.
+      invite_not_pending: Esa invitación ya no está pendiente.
+    mail:
+      view: Abrir comunidad
+      membership_requested:
+        subject: "Solicitud para %{name}"
+        body: "%{user} pidió unirse a %{name}."
+      membership_approved:
+        subject: "Bienvenido/a a %{name}"
+        body: "Tu solicitud para unirte a %{name} fue aprobada."
+      game_announced:
+        subject: "Nuevo partido en %{name}"
+        body: "Se vinculó un partido del %{date} a %{name}."
+      invitation_created:
+        subject: "Invitación a %{name}"
+        body: "%{user} te invitó a unirte a %{name}."
+      invitation_accepted:
+        subject: "%{user} se unió a %{name}"
+        body: "%{user} aceptó una invitación a %{name}."
   players:
     index:
       title: Buscar jugadores
@@ -271,7 +440,16 @@ es:
       live: "Partido en juego: abrir el marcador"
   games:
     court_pending: Pista aún sin elegir
+    flash:
+      peer_canceled: Partido entre jugadores cancelado.
+      peer_cancel_failed: No se pudo cancelar ese partido.
+      unauthorized: No puedes hacer eso.
+      canceled_locked: Este partido fue cancelado — no se pueden registrar resultados.
     show:
+      canceled_banner: Este partido entre jugadores fue cancelado.
+      peer_match_hint: Partido privado — solo lo ven los participantes.
+      cancel_peer: Cancelar partido
+      cancel_peer_confirm: ¿Cancelar este partido programado para todos?
       win_chances:
         title: Probabilidades de victoria
         mode:
@@ -617,6 +795,7 @@ es:
     edit:
       title: Cuenta
       my_games: Mis partidos
+      match_history: Historial de partidos
       profile: Perfil
       notifications: Telegram y notificaciones
       security: Seguridad

@@ -105,11 +105,35 @@ Local development does **not** use SMTP: messages are written to `tmp/mails`. Pr
 | Ports | Host/proxy → `WEB_PORT` (default 3000) on `web`. Postgres: **internal only**. |
 | HTTPS | Terminate TLS at Caddy/nginx/etc. Rails `assume_ssl` / `force_ssl` expect `X-Forwarded-Proto`. |
 | Trusted hosts | Defaults include `getcourt.co` / `*.getcourt.co`; add others via `RAILS_ALLOWED_HOSTS`. |
-| Trusted proxies | Private/loopback CIDRs by default. Add CDN ranges via `TRUSTED_PROXIES` (comma-separated). Never trust the open Internet. |
+| Trusted proxies | **Default: loopback only** (`127.0.0.0/8`, `::1`). Add the real proxy/CDN hop via `TRUSTED_PROXIES` (comma-separated CIDRs). Optional `TRUST_PRIVATE_NETWORK_PROXIES=1` restores broad RFC1918 trust — only for firewalled Compose where Rails is unreachable from untrusted private peers. Never trust the open Internet. |
 | Health | Proxy may probe `/up` over HTTP to the container; HTTPS redirect is skipped for `/up`. `/up` returns no secrets. |
 | WebSockets | Forward `Upgrade` / `Connection` headers to Puma for Action Cable (Solid Cable). |
 | Forwarded headers | Set `X-Forwarded-For`, `X-Forwarded-Proto`, `Host` (or `X-Forwarded-Host`) at the **proxy you trust**. Clients must not be able to inject those headers past the proxy. |
-| Rate limits | Rack::Attack uses `request.ip` after trusted-proxy handling; misconfigured trust collapses many users into one bucket. |
+| Rate limits | Rack::Attack uses `request.ip` after trusted-proxy handling (Solid Cache store). Spoofed `X-Forwarded-For` from untrusted peers is ignored. Direct hits to Rails use the TCP peer IP. |
+| Exposure | Prefer binding `WEB_PORT` to `127.0.0.1` on the host (`WEB_PORT=127.0.0.1:3000`) and terminate TLS at Caddy/nginx/Cloudflare Tunnel. Do not publish Postgres. |
+
+### Intended production request path (operator chooses)
+
+```
+Client → (optional CDN) → Host reverse proxy (TLS) → 127.0.0.1:WEB_PORT → Compose `web` (Puma)
+                                      ↓
+                               Compose `worker` (Solid Queue)
+                                      ↓
+                               Compose `db` (PostGIS, internal network only)
+```
+
+**Operator decisions before go-live**
+
+1. Which process terminates TLS (Caddy/nginx on host vs CDN Tunnel)?
+2. Exact `TRUSTED_PROXIES` values for that hop (and CDN CIDRs if applicable)?
+3. Is `web` published only on loopback, or also on a private VPC interface?
+4. Confirm firewall: no public `5432`; no public raw Puma unless behind the chosen proxy.
+
+**Spoofing / direct-access behavior**
+
+- Request from untrusted peer with forged `X-Forwarded-For`: Rails ignores the header; `request.ip` = TCP peer.
+- Request via trusted proxy: client IP taken from forwarded chain per Rails rules; Rack::Attack keys per real client.
+- Direct public access to `:3000` (misconfiguration): rate limits still apply, but TLS/`Host` assumptions break — bind to loopback.
 
 Do not expose Postgres or the raw app port to the public Internet without a proxy and firewall rules.
 

@@ -1,0 +1,50 @@
+<% content_for :meta_robots, "noindex, follow" %>
+
+<div class="mx-auto max-w-3xl space-y-4 px-4 py-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= t("match_history.title") %></h1>
+    <p class="mt-1 text-sm text-gray-600 dark:text-slate-400"><%= t("match_history.subtitle") %></p>
+  </div>
+
+  <% if @matches.any? %>
+    <ul class="space-y-3">
+      <% @matches.each do |match| %>
+        <% stats = match.stats.to_h %>
+        <li class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-slate-800/80">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="space-y-1">
+              <p class="font-semibold text-gray-900 dark:text-slate-100">
+                <%= l(match.played_at.to_date, format: :long) rescue match.played_at %>
+                · <%= t("users.profile.play_format.#{match.mode}", default: match.mode) %>
+              </p>
+              <p class="text-sm text-gray-600 dark:text-slate-400">
+                <%= t("match_history.outcome.#{match.outcome}") %>
+                <% if match.score.present? %>
+                  · <%= match.score %>
+                <% end %>
+              </p>
+              <p class="text-sm text-gray-600 dark:text-slate-400">
+                <% opponent_ids = [ match.opponent_id, *Array(stats["opponent_ids"]) ].compact.uniq %>
+                <% if opponent_ids.any? %>
+                  <%= t("match_history.vs") %>:
+                  <%= opponent_ids.map { |id| User.find_by(id: id)&.name.presence || "##{id}" }.join(", ") %>
+                <% end %>
+              </p>
+              <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                <%= t("match_results.status.#{match.result_status}") %>
+              </p>
+            </div>
+            <% if match.game_page_relevant? && match.game.visible_to?(current_user) %>
+              <%= link_to t("match_history.view_game"), game_path(match.game), class: "text-sm text-indigo-600 hover:underline dark:text-indigo-400" %>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+    <% if @pagy %>
+      <div class="pt-2"><%== pagy_nav(@pagy) if @pagy.pages > 1 %></div>
+    <% end %>
+  <% else %>
+    <p class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/10 dark:text-slate-400"><%= t("match_history.empty") %></p>
+  <% end %>
+</div>

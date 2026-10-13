@@ -29,8 +29,10 @@ module PlayerStatistics
         match = find_or_init_match(played_at)
         new_record = match.new_record?
         stale = stale_match?(match)
+        old_stats = match.persisted? && !stale ? match.stats.to_h : {}
         old_outcome = match.persisted? && !stale ? match.outcome.to_s : nil
         old_hours = match.persisted? && !stale ? match.stats.to_h["hours"] : nil
+        old_counted = !stale && MatchResultStatus.counts_for_competitive?(old_stats)
 
         match.opponent = @opponent
         match.outcome = @outcome
@@ -39,10 +41,16 @@ module PlayerStatistics
         match.surface = surface_for(match)
         match.stats = (match.stats || {}).to_h.merge(@stats.to_h).tap do |stats|
           stats["hours"] = @hours if @hours.present?
+          MatchResultStatus.submission_meta(actor: @actor, game: @game, previous: stats).each do |key, value|
+            stats[key] = value
+          end
         end
         match.save!
 
-        apply_counters_delta!(
+        new_counted = MatchResultStatus.counts_for_competitive?(match.stats)
+        apply_competitive_and_hours!(
+          old_counted: old_counted,
+          new_counted: new_counted,
           new_record: new_record || stale,
           old_outcome: old_outcome,
           new_outcome: @outcome,
@@ -155,7 +163,21 @@ module PlayerStatistics
       match.persisted? && reset_at.present? && match.updated_at.present? && match.updated_at < reset_at
     end
 
-    def apply_counters_delta!(new_record:, old_outcome:, new_outcome:, old_hours:, new_hours:)
+    # Competitive W/L/games and match-linked hours only move when confirmed.
+    # Pending/disputed rows may store hours on Match#stats but do not inflate
+    # PlayerStatistic until confirmation (or open-game auto-confirm).
+    def apply_competitive_and_hours!(old_counted:, new_counted:, new_record:, old_outcome:, new_outcome:, old_hours:, new_hours:)
+      if new_counted && !old_counted
+        apply_counters_delta!(new_record: true, old_outcome: nil, new_outcome: new_outcome, old_hours: 0, new_hours: new_hours, competitive: true)
+      elsif old_counted && !new_counted
+        apply_counters_delta!(new_record: false, old_outcome: old_outcome, new_outcome: nil, old_hours: old_hours, new_hours: 0, competitive: true, reverse_competitive: true)
+      elsif old_counted && new_counted
+        apply_counters_delta!(new_record: new_record, old_outcome: old_outcome, new_outcome: new_outcome, old_hours: old_hours, new_hours: new_hours, competitive: true)
+      end
+      # Pending/disputed: no PlayerStatistic mutation (hours stay on Match#stats only).
+    end
+
+    def apply_counters_delta!(new_record:, old_outcome:, new_outcome:, old_hours:, new_hours:, competitive: true, reverse_competitive: false)
       ps = @user.player_statistic || @user.create_player_statistic
 
       games_key = @mode == "doubles" ? :doubles_games : :singles_games
@@ -172,9 +194,7 @@ module PlayerStatistics
         end
       end
 
-      # Skip activity increment only for coach sessions where stats entry already
-      # counted the training visit for this user+game in the current cycle.
-      activity_counted = if new_record && training_key.present?
+      activity_counted = if new_record && training_key.present? && competitive
         cycle_start = @game.respond_to?(:current_cycle_start) ? @game.current_cycle_start : nil
         scope = PlayerStatisticEntry.where(user: @user, game: @game)
         scope = scope.where("recorded_at >= ?", cycle_start) if cycle_start.present?
@@ -184,22 +204,24 @@ module PlayerStatistics
       end
 
       ps.with_lock do
-        if new_record
-          unless activity_counted
-            if training_key
-              ps[training_key] = ps[training_key].to_i + 1
-            else
-              ps[games_key] = ps[games_key].to_i + 1
+        if competitive
+          if reverse_competitive
+            reverse_competitive_counters!(ps, games_key:, wins_key:, losses_key:, training_key:, outcome: old_outcome)
+          elsif new_record
+            unless activity_counted
+              if training_key
+                ps[training_key] = ps[training_key].to_i + 1
+              else
+                ps[games_key] = ps[games_key].to_i + 1
+              end
             end
-          end
 
-          if new_outcome == "win"
-            ps[wins_key] = ps[wins_key].to_i + 1
-          elsif new_outcome == "loss"
-            ps[losses_key] = ps[losses_key].to_i + 1
-          end
-        else
-          if old_outcome.present? && old_outcome != new_outcome
+            if new_outcome == "win"
+              ps[wins_key] = ps[wins_key].to_i + 1
+            elsif new_outcome == "loss"
+              ps[losses_key] = ps[losses_key].to_i + 1
+            end
+          elsif old_outcome.present? && new_outcome.present? && old_outcome != new_outcome
             if old_outcome == "win"
               ps[wins_key] = ps[wins_key].to_i - 1
             elsif old_outcome == "loss"
@@ -225,6 +247,36 @@ module PlayerStatistics
 
         ps.save!
       end
+    end
+
+    def reverse_competitive_counters!(ps, games_key:, wins_key:, losses_key:, training_key:, outcome:)
+      if training_key
+        ps[training_key] = [ ps[training_key].to_i - 1, 0 ].max
+      else
+        ps[games_key] = [ ps[games_key].to_i - 1, 0 ].max
+      end
+      if outcome == "win"
+        ps[wins_key] = [ ps[wins_key].to_i - 1, 0 ].max
+      elsif outcome == "loss"
+        ps[losses_key] = [ ps[losses_key].to_i - 1, 0 ].max
+      end
+    end
+
+    # Called when a pending peer result is confirmed — credits W/L/games and hours.
+    def self.credit_confirmed_match!(match)
+      user = match.user
+      mode = match.mode.to_s
+      game = match.game
+      hours = match.stats.to_h["hours"]
+      new(user: user, game: game, actor: user, mode: mode, outcome: match.outcome).send(
+        :apply_counters_delta!,
+        new_record: true,
+        old_outcome: nil,
+        new_outcome: match.outcome.to_s,
+        old_hours: 0,
+        new_hours: hours,
+        competitive: true
+      )
     end
   end
 end

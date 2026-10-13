@@ -27,8 +27,18 @@ Previously `SessionsController` signed users in when `require_verification` was 
 - Schedule propose/confirm is limited to invitation participants; only the non-proposer may confirm; stale `proposal_updated_at` tokens are rejected.
 - Targeting private, ineligible, opted-out, or self accounts is rejected; forged court IDs must resolve via `Court.visible_to`.
 - Peer games set `invite_only` and are excluded from public games index / API `publicly_visible`.
+- Invite-only HTML/nested/API access uses `Game#visible_to?` (organizer, participants, pending recruits, linked MatchInvitation, admin) — not obscurity.
 - Create is rate-limited (Rack::Attack + pending-per-sender cap). See `docs/match-invitations.md`.
 - Active Storage signed routes deny `User` avatar blobs unless the session viewer passes `profile_visible_to?`.
+
+## Match results (P1-05)
+- Only eligible participants submit results; opposing registered players confirm/dispute pending invite-only results.
+- Stale `result_updated_at` tokens rejected; competitive W/L/games and ELO skip pending/disputed groups. See `docs/match-results.md`.
+
+## Communities (P1-06)
+- `/communities` requires authentication; directory lists public communities only.
+- Private community member lists/games require membership; teasers allow join/request via shared slug.
+- Role gates for approve/remove/settings; sole-owner leave blocked. See `docs/communities.md`.
 
 ## Player discovery (P1-02)
 - `GET /players` requires authentication. Private and community-ineligible accounts are excluded from the relation before pagination; counts do not reveal their existence.

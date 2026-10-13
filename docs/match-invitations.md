@@ -109,15 +109,17 @@ Delivery failures are logged and do not roll back invitation/scheduling state. J
 - Court IDs must resolve via `Court.visible_to` for either participant
 - Notes/messages escaped in views; length-limited
 - Active Storage avatar gate from P1-03 unchanged
-- `invite_only` games excluded from public games index and API visibility; show URL remains available so doubles slots can be filled via existing participation/invite mechanisms
+- `invite_only` games excluded from public games index and API visibility
+- `Game#visible_to?` gates show + nested resources (see `docs/match-results.md`)
+- Doubles recruitment: game invitations create pending participations so invitees can open the private game
+- Scheduled peer matches can be soft-canceled (`canceled_at`) by either participant
 
 ## Known limitations
 
 - No chat / calendar sync / court booking payments
-- No push of invite-only privacy onto `games#show` beyond list/API hiding
-- No dedicated “unschedule / cancel peer game from invitation” action
 - Doubles partners are not auto-matched
 - Time zone is application `Time.zone` (same as other Game scheduling)
+- Result confirmation details: `docs/match-results.md`
 
 ## P1-02 follow-ups addressed (earlier)
 

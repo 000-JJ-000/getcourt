@@ -1,0 +1,36 @@
+<% content_for :meta_robots, "noindex, follow" %>
+
+<div class="mx-auto max-w-3xl space-y-4 px-4 py-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100"><%= t("communities.invitations.title") %></h1>
+    <p class="mt-1 text-sm text-gray-600 dark:text-slate-400"><%= t("communities.invitations.subtitle") %></p>
+  </div>
+
+  <% if @received.any? %>
+    <ul class="space-y-3">
+      <% @received.each do |invitation| %>
+        <% invitation.expire_if_needed! %>
+        <% next unless invitation.pending? %>
+        <li class="rounded-lg border bg-white p-4 dark:border-white/10 dark:bg-slate-800/80">
+          <p class="text-sm font-medium text-gray-900 dark:text-slate-100">
+            <%= invitation.community.name %>
+          </p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-slate-400">
+            <%= t("communities.invitations.from", name: invitation.inviter.name.presence || t("users.show.anonymous_name")) %>
+            · <%= t("communities.invitations.expires", date: l(invitation.expires_at.to_date, format: :long)) %>
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <%= button_to t("communities.actions.accept_invite"), accept_community_invitation_path(invitation), method: :post, class: "rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white" %>
+            <%= button_to t("communities.actions.decline_invite"), decline_community_invitation_path(invitation), method: :post, class: "rounded-md border px-3 py-1.5 text-sm" %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-sm text-gray-500 dark:text-slate-400"><%= t("communities.invitations.empty") %></p>
+  <% end %>
+
+  <p class="text-sm">
+    <%= link_to t("communities.invitations.back_match"), invitations_path, class: "text-indigo-700 hover:underline dark:text-indigo-300" %>
+  </p>
+</div>

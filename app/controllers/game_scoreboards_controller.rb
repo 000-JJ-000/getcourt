@@ -3,7 +3,10 @@
 # после начала игры.
 class GameScoreboardsController < ApplicationController
   skip_before_action :authenticate_user!, only: :show
+  include GameAccess
+
   before_action :set_game
+  before_action :authorize_game_visible!
   before_action :set_scoreboard, only: %i[edit update score unscore tiebreak reset_tiebreak finish]
   before_action :require_scorer!, except: :show
 

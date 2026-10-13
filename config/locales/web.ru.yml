@@ -131,6 +131,177 @@ ru:
       scheduling_reminder:
         subject: Всё ещё нужно назначить время?
         body: "Вы и %{name} приняли приглашение на %{format}, но ещё не назначили время."
+  match_results:
+    pending_title: Результаты ждут подтверждения
+    waiting_confirm: Ждём подтверждения соперника.
+    actions:
+      confirm: Подтвердить результат
+      dispute: Оспорить
+    status:
+      pending: Ожидает подтверждения
+      confirmed: Подтверждён
+      disputed: Оспорен
+    flash:
+      submitted_pending: Результат отправлен — ждём подтверждения соперника.
+      confirmed: Результат подтверждён.
+      disputed: Результат оспорен — отправьте исправленный счёт.
+      unauthorized: Вы не можете подтвердить этот результат.
+      stale: Результат изменился — посмотрите актуальный.
+      not_pending: Этот результат не ждёт подтверждения.
+      failed: Не удалось обновить результат.
+    mail:
+      view: Открыть игру
+      submitted:
+        subject: Результат ждёт подтверждения
+        body: "По вашей игре %{date} отправили результат. Подтвердите или оспорьте в GetCourt."
+      confirmed:
+        subject: Результат подтверждён
+        body: "Результат вашей игры %{date} подтверждён."
+      disputed:
+        subject: Результат оспорен
+        body: "Результат вашей игры %{date} оспорен. Отправьте исправленный счёт."
+      peer_canceled:
+        subject: Игра отменена
+        body: "Ваша запланированная игра %{date} отменена."
+  match_history:
+    title: История матчей
+    subtitle: Ваши записанные результаты — в том числе ожидающие подтверждения.
+    empty: Матчей пока нет.
+    vs: против
+    view_game: Открыть игру
+    outcome:
+      win: Победа
+      loss: Поражение
+      draw: Ничья
+  communities:
+    index:
+      title: Сообщества
+      subtitle: Местные теннисные группы — находите, вступайте и организуйте игры.
+      empty: Нет публичных сообществ по этим фильтрам.
+      create: Создать сообщество
+      members:
+        one: "%{count} участник"
+        few: "%{count} участника"
+        many: "%{count} участников"
+        other: "%{count} участников"
+      filters:
+        q: Название
+        q_placeholder: Поиск по названию
+        city: Город / район
+        city_placeholder: например, Екатеринбург
+        play_focus: Формат
+        any: Любой
+        submit: Искать
+    show:
+      members: Участники
+      pending: Заявки
+      invitations: Ожидающие приглашения
+      invite_player: Пригласить игрока
+      invite_placeholder: Поиск по имени…
+      invite_only_hint: Для вступления нужно приглашение
+      upcoming: Ближайшие игры
+      recent: Недавние игры
+      link_game: Привязать вашу игру
+      create_game: Создать игру
+      create_game_for: "Создание игры для %{name}"
+      unlink: Отвязать
+      no_games: Игр сообщества пока нет.
+      edit: Настройки сообщества
+    invitations:
+      title: Приглашения в сообщества
+      subtitle: Приглашения в приватные сообщества, адресованные вам.
+      empty: Нет ожидающих приглашений.
+      from: "От %{name}"
+      expires: "До %{date}"
+      back_match: Приглашения на матчи
+    new:
+      title: Создать сообщество
+    edit:
+      title: Редактировать сообщество
+    form:
+      name: Название
+      description: Описание
+      city_name: Город / район
+      visibility: Видимость
+      membership_policy: Вступление
+      play_focus: Формат
+      ntrp_min: NTRP от
+      ntrp_max: NTRP до
+      submit_create: Создать
+      submit_update: Сохранить
+    visibility:
+      public: Публичное
+      private: Приватное
+    membership_policy:
+      open: Свободное
+      approval: По заявке
+    play_focus:
+      singles: Одиночные
+      doubles: Парные
+      both: Одиночные и парные
+    roles:
+      owner: Владелец
+      moderator: Модератор
+      member: Участник
+    actions:
+      join: Вступить
+      request: Подать заявку
+      leave: Выйти
+      approve: Одобрить
+      decline: Отклонить
+      remove: Исключить
+      promote: Сделать модератором
+      demote: Снять модератора
+      transfer: Передать владение
+      invite: Отправить приглашение
+      accept_invite: Принять
+      decline_invite: Отклонить
+      revoke_invite: Отозвать
+    flash:
+      created: Сообщество создано.
+      updated: Сообщество обновлено.
+      joined: Вы вступили в сообщество.
+      request_sent: Заявка отправлена.
+      left: Вы вышли из сообщества.
+      approved: Заявка одобрена.
+      declined: Заявка отклонена.
+      removed: Участник исключён.
+      promoted: Модератор добавлен.
+      demoted: Модератор снят.
+      transferred: Владение передано.
+      game_linked: Игра привязана к сообществу.
+      game_unlinked: Игра отвязана.
+      game_link_failed: Эту игру нельзя привязать.
+      already_member: У вас уже есть членство.
+      sole_owner: Сначала передайте владение.
+      unauthorized: Так нельзя.
+      failed: Не удалось обновить членство.
+      rate_limited: Слишком много сообществ за сегодня — попробуйте завтра.
+      invite_required: В это приватное сообщество можно попасть только по приглашению.
+      invite_sent: Приглашение отправлено.
+      invite_failed: Не удалось отправить приглашение.
+      invite_duplicate: Активное приглашение этому игроку уже есть.
+      invite_accepted: Вы вступили в сообщество.
+      invite_declined: Приглашение отклонено.
+      invite_revoked: Приглашение отозвано.
+      invite_not_pending: Это приглашение уже не активно.
+    mail:
+      view: Открыть сообщество
+      membership_requested:
+        subject: "Заявка в %{name}"
+        body: "%{user} хочет вступить в %{name}."
+      membership_approved:
+        subject: "Добро пожаловать в %{name}"
+        body: "Вашу заявку в %{name} одобрили."
+      game_announced:
+        subject: "Новая игра в %{name}"
+        body: "К сообществу %{name} привязали игру на %{date}."
+      invitation_created:
+        subject: "Приглашение в %{name}"
+        body: "%{user} приглашает вас в %{name}."
+      invitation_accepted:
+        subject: "%{user} вступил(а) в %{name}"
+        body: "%{user} принял(а) приглашение в %{name}."
   players:
     index:
       title: Найти игроков
@@ -275,7 +446,16 @@ ru:
       live: Идёт матч — открыть табло
   games:
     court_pending: Корт пока не выбран
+    flash:
+      peer_canceled: Игра отменена.
+      peer_cancel_failed: Не удалось отменить эту игру.
+      unauthorized: Так нельзя.
+      canceled_locked: Эта игра отменена — результаты записывать нельзя.
     show:
+      canceled_banner: Эта приватная игра отменена.
+      peer_match_hint: Приватная игра — видна только участникам.
+      cancel_peer: Отменить игру
+      cancel_peer_confirm: Отменить эту запланированную игру для всех?
       win_chances:
         title: Шансы на победу
         mode:
@@ -621,6 +801,7 @@ ru:
     edit:
       title: Кабинет
       my_games: Мои игры
+      match_history: История матчей
       profile: Профиль
       notifications: Telegram и уведомления
       security: Безопасность

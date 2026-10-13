@@ -14,6 +14,7 @@ class Game < ApplicationRecord
                         saved_change_to_recurrence_days? || saved_change_to_occurrence_dates? }
 
   belongs_to :tournament, optional: true
+  belongs_to :community, optional: true
   # Корт можно оставить «пока не выбран»: игру часто объявляют раньше, чем знают,
   # где она пройдёт. Всё, что от корта зависит (город, карта, погода, поиск
   # игроков), просто ждёт, пока его выберут.
@@ -48,7 +49,9 @@ class Game < ApplicationRecord
     left_outer_joins(:court)
       .where(courts: { moderation_status: [ nil, "approved" ] })
       .where(invite_only: false)
+      .where(canceled_at: nil)
   }
+  scope :not_canceled, -> { where(canceled_at: nil) }
   scope :still_running, ->(day = Date.current) {
     # ends_on проставляет колбэк, поэтому у записей, заведённых мимо него
     # (фикстуры, ручные вставки), его нет — для них спрашиваем саму дату.
@@ -791,6 +794,54 @@ class Game < ApplicationRecord
   # ни записалось; иначе фильтр «есть места» молча считал бы вместимость за 4.
   def spots_available?
     !players_count_chosen? || spots_left.positive?
+  end
+
+  def canceled?
+    canceled_at.present?
+  end
+
+  # Public games stay open. Invite-only peer matches require an explicit grant:
+  # organizer, admin, any participation (pending = invited doubles recruit), or
+  # a MatchInvitation tied to this game.
+  def visible_to?(user)
+    return true unless invite_only?
+    return false if user.blank?
+    return true if user.admin?
+    return true if user_id == user.id
+    return true if participations.exists?(user_id: user.id)
+    return true if MatchInvitation.involving(user).exists?(game_id: id)
+
+    false
+  end
+
+  # Soft-canceled peer matches reject new Match rows. Trainings omit scores in
+  # the web form, but services may still touch Match rows for counter tests.
+  def accepts_results?
+    !canceled?
+  end
+
+  # Entire peer-match cancel: either participant (or organizer/admin). Individual
+  # withdrawal stays on Participation destroy. Soft-cancel preserves Match rows.
+  def cancel_peer_match!(by:)
+    raise ArgumentError, "unauthorized" unless can_cancel_peer_match?(by)
+    raise ArgumentError, "not_invite_only" unless invite_only?
+
+    with_lock do
+      reload
+      return self if canceled?
+
+      update!(canceled_at: Time.current, urgent_player_search: false)
+    end
+    self
+  end
+
+  def can_cancel_peer_match?(user)
+    return false unless user
+    return true if user.admin?
+    return true if user_id == user.id
+    return true if invite_only? && participations.approved.exists?(user_id: user.id)
+
+    false
   end
 
   def next_time

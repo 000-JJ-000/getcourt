@@ -78,6 +78,31 @@ Rails.application.routes.draw do
   # with the invitation picker JSON search and any future users#index.
   resources :players, only: [ :index ]
 
+  resources :communities, only: %i[index show new create edit update] do
+    resources :memberships, controller: :community_memberships, only: %i[create destroy] do
+      member do
+        post :approve
+        post :decline
+        post :remove
+        post :promote
+        post :demote
+        post :transfer
+      end
+    end
+    member do
+      post :invite, to: "community_invitations#create"
+    end
+    resources :games, controller: :community_games, only: %i[new create destroy]
+  end
+
+  resources :community_invitations, only: %i[index] do
+    member do
+      post :accept
+      post :decline
+      post :revoke
+    end
+  end
+
   # Peer match invitations (P1-03). Distinct from GameInvitationsController, which
   # notifies Telegram handles about an existing game.
   resources :invitations, controller: :match_invitations, only: %i[index show] do
@@ -90,7 +115,11 @@ Rails.application.routes.draw do
     end
   end
 
+  resource :match_history, only: :show, controller: :match_histories, path: "account/match_history"
+
   post "/games/:game_id/player_statistics", to: "player_statistics#create_for_game", as: :game_player_statistics
+  post "/games/:game_id/match_results/confirm", to: "match_results#confirm", as: :confirm_game_match_result
+  post "/games/:game_id/match_results/dispute", to: "match_results#dispute", as: :dispute_game_match_result
   post "/games/:game_id/invitations", to: "game_invitations#create", as: :game_invitations
   get "/games/:game_id/share-card", to: "game_share_cards#show", as: :game_share_card
 
@@ -142,6 +171,7 @@ Rails.application.routes.draw do
       post :toggle_urgent_player_search
       post :accept_coach_invitation
       post :decline_coach_invitation
+      post :cancel_peer
     end
 
     collection do

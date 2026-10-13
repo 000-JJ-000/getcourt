@@ -1,6 +1,9 @@
 class PrebookingsController < ApplicationController
+  include GameAccess
+
   before_action :authenticate_user!, except: :more
   before_action :set_game
+  before_action :authorize_game_visible!
   before_action :set_prebooking, only: %i[book assign cancel approve reject]
 
   # Календарь на месяц; слоты под его занятия заводим лениво, когда до месяца

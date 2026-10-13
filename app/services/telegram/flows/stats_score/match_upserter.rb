@@ -5,6 +5,8 @@ module Telegram
         module_function
 
         def call(game:, actor:, mode:, team_a_ids:, team_b_ids:, result:, played_at:, score:, force_new: false, team_a_guest_names: [], team_b_guest_names: [], group_id: nil)
+          raise ArgumentError, "canceled" if game&.canceled?
+
           group_id ||= SecureRandom.uuid
           team_a_ids = team_a_ids.map(&:to_i)
           team_b_ids = team_b_ids.map(&:to_i)

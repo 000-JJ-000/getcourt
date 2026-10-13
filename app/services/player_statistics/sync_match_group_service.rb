@@ -20,6 +20,8 @@ module PlayerStatistics
 
     # Returns true when the group was found and synced, false otherwise.
     def call
+      raise ArgumentError, "canceled" if @game.canceled?
+
       Match.transaction do
         existing = MatchGroups.find(@game, @group_id)
         return false if existing.empty?
@@ -93,12 +95,13 @@ module PlayerStatistics
       stats
     end
 
-    # Mirrors the new_record branch of UpsertMatchForGameService#apply_counters_delta!
-    # in reverse, then destroys the row.
+    # Mirrors UpsertMatchForGameService competitive credit in reverse when the
+    # row had counted, then destroys the row. Pending/disputed rows only unwind hours.
     def remove_match!(match)
       user = match.user
       mode = match.mode.to_s
       ps = user.player_statistic || user.create_player_statistic
+      counted = MatchResultStatus.counts_for_competitive?(match.stats)
 
       games_key = mode == "doubles" ? :doubles_games : :singles_games
       hours_key = mode == "doubles" ? :doubles_hours : :singles_hours
@@ -110,22 +113,24 @@ module PlayerStatistics
         end
 
       ps.with_lock do
-        if training_key
-          # Mirror the creation-side activity_counted check: when a stats entry
-          # already covered this visit, the match never incremented training.
-          ps[training_key] = [ ps[training_key].to_i - 1, 0 ].max unless activity_counted_elsewhere?(user)
-        else
-          ps[games_key] = [ ps[games_key].to_i - 1, 0 ].max
+        if counted
+          if training_key
+            ps[training_key] = [ ps[training_key].to_i - 1, 0 ].max unless activity_counted_elsewhere?(user)
+          else
+            ps[games_key] = [ ps[games_key].to_i - 1, 0 ].max
+          end
+
+          if match.outcome == "win"
+            ps[wins_key] = [ ps[wins_key].to_i - 1, 0 ].max
+          elsif match.outcome == "loss"
+            ps[losses_key] = [ ps[losses_key].to_i - 1, 0 ].max
+          end
         end
 
-        if match.outcome == "win"
-          ps[wins_key] = [ ps[wins_key].to_i - 1, 0 ].max
-        elsif match.outcome == "loss"
-          ps[losses_key] = [ ps[losses_key].to_i - 1, 0 ].max
+        if counted
+          hours = match.stats.to_h["hours"].to_f
+          ps[hours_key] = [ (ps[hours_key] || 0).to_f - hours, 0.0 ].max if hours != 0.0
         end
-
-        hours = match.stats.to_h["hours"].to_f
-        ps[hours_key] = [ (ps[hours_key] || 0).to_f - hours, 0.0 ].max if hours != 0.0
 
         ps.save!
       end

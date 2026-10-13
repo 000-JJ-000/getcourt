@@ -1,6 +1,9 @@
 class PrebookingCancellationsController < ApplicationController
+  include GameAccess
+
   before_action :authenticate_user!
   before_action :set_game
+  before_action :authorize_game_visible!
   before_action :set_cancellation, only: [ :destroy ]
 
   def create

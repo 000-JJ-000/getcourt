@@ -16,6 +16,9 @@ production:
   expire_match_invitations:
     class: ExpireMatchInvitationsJob
     schedule: every hour at minute 20
+  expire_community_invitations:
+    class: ExpireCommunityInvitationsJob
+    schedule: every hour at minute 25
   match_invitation_scheduling_reminders:
     class: MatchInvitationSchedulingReminderJob
     schedule: at 10am every day

@@ -4,6 +4,22 @@ module Players
   class DirectoryQuery
     PAGE_SIZE = 20
 
+    # Fixed ORDER BY fragments — no user input. Kept as Arel.sql literals so
+    # Brakeman can treat them as static allowlisted SQL.
+    COMPLETENESS_ORDER = Arel.sql(<<~SQL.squish)
+      (
+        CASE WHEN NULLIF(btrim(users.name), '') IS NOT NULL THEN 1 ELSE 0 END +
+        CASE WHEN users.city_id IS NOT NULL OR NULLIF(btrim(users.city_name), '') IS NOT NULL THEN 1 ELSE 0 END +
+        CASE WHEN users.ntrp_rating IS NOT NULL THEN 1 ELSE 0 END +
+        CASE WHEN COALESCE(users.play_formats::text, '[]') NOT IN ('[]', 'null')
+               OR COALESCE(users.play_styles::text, '[]') NOT IN ('[]', 'null') THEN 1 ELSE 0 END +
+        CASE WHEN COALESCE(users.availability::text, '{}') NOT IN ('{}', 'null') THEN 1 ELSE 0 END
+      ) DESC
+    SQL
+
+    NAME_ORDER = Arel.sql("lower(COALESCE(NULLIF(btrim(users.name), ''), '')) ASC")
+    ID_ORDER = Arel.sql("users.id ASC")
+
     attr_reader :viewer, :filters
 
     def initialize(viewer:, filters: {})
@@ -136,41 +152,39 @@ module Players
     end
 
     def apply_order(scope)
-      scope.order(Arel.sql("#{same_city_sql} ASC, #{completeness_sql} DESC, #{name_sql} ASC, users.id ASC"))
+      # Same-city preference is built with Arel nodes + bound values (no string
+      # interpolation into Arel.sql). Completeness/name/id are fixed allowlists.
+      scope.order(same_city_rank_node.asc, COMPLETENESS_ORDER, NAME_ORDER, ID_ORDER)
     end
 
-    def same_city_sql
-      clauses = []
+    def same_city_rank_node
+      condition = same_city_condition
+      return Arel.sql("1") if condition.nil?
+
+      Arel::Nodes::Case.new.when(condition).then(0).else(1)
+    end
+
+    def same_city_condition
+      users = User.arel_table
+      parts = []
 
       if viewer.city_id.present?
-        clauses << "users.city_id = #{viewer.city_id.to_i}"
+        parts << users[:city_id].eq(viewer.city_id.to_i)
       end
 
       if viewer.city_name.present?
-        quoted = User.connection.quote(viewer.city_name)
-        clauses << "lower(btrim(users.city_name)) = lower(btrim(#{quoted}))"
+        normalized = viewer.city_name.to_s.strip.downcase
+        city_name_expr = Arel::Nodes::NamedFunction.new(
+          "lower",
+          [ Arel::Nodes::NamedFunction.new("btrim", [ users[:city_name] ]) ]
+        )
+        parts << city_name_expr.eq(normalized)
       end
 
-      return "1" if clauses.empty?
+      return nil if parts.empty?
+      return parts.first if parts.one?
 
-      "CASE WHEN #{clauses.join(' OR ')} THEN 0 ELSE 1 END"
-    end
-
-    def completeness_sql
-      <<~SQL.squish
-        (
-          CASE WHEN NULLIF(btrim(users.name), '') IS NOT NULL THEN 1 ELSE 0 END +
-          CASE WHEN users.city_id IS NOT NULL OR NULLIF(btrim(users.city_name), '') IS NOT NULL THEN 1 ELSE 0 END +
-          CASE WHEN users.ntrp_rating IS NOT NULL THEN 1 ELSE 0 END +
-          CASE WHEN COALESCE(users.play_formats::text, '[]') NOT IN ('[]', 'null')
-                 OR COALESCE(users.play_styles::text, '[]') NOT IN ('[]', 'null') THEN 1 ELSE 0 END +
-          CASE WHEN COALESCE(users.availability::text, '{}') NOT IN ('{}', 'null') THEN 1 ELSE 0 END
-        )
-      SQL
-    end
-
-    def name_sql
-      "lower(COALESCE(NULLIF(btrim(users.name), ''), ''))"
+      parts.reduce { |left, right| left.or(right) }
     end
   end
 end

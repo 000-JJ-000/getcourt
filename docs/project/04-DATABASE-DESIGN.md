@@ -23,6 +23,9 @@ UserIdentity; canonical MatchResult; MatchResultConfirmation; PlayerRating; Rati
 ## Match invitations (P1-03 / P1-04)
 `match_invitations` stores peer invites plus coordination fields (`scheduling_status`, `proposed_by`, `proposal_note`, `proposal_updated_at`, `scheduling_reminded_at`). Peer games use `games.invite_only`. Details: `docs/match-invitations.md`.
 
+## Communities (P1-06)
+`communities` + `community_memberships` (roles/status) and optional `games.community_id`. Details: `docs/communities.md`.
+
 ## Player profile columns (P1-01)
 Profile data stays on `users` (no separate `PlayerProfile` table): `ntrp_rating`, `play_formats`, `play_styles`, `availability`, `profile_visibility`, `show_stats_on_profile`, `show_telegram_on_profile`, optional `city_id` FK to `cities`, plus Active Storage `avatar`. Details: `docs/player-profiles.md`.
 
