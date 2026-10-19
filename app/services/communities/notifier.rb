@@ -72,11 +72,11 @@ module Communities
     end
 
     def detail_url(game)
-      host = ENV.fetch("APP_HOST", "http://localhost:3000")
+      opts = PublicAppHost.url_options
       if game
-        Rails.application.routes.url_helpers.game_url(game, host: host)
+        Rails.application.routes.url_helpers.game_url(game, **opts)
       else
-        Rails.application.routes.url_helpers.community_url(community, host: host)
+        Rails.application.routes.url_helpers.community_url(community, **opts)
       end
     end
   end

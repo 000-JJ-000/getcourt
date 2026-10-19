@@ -98,11 +98,11 @@ module MatchInvitations
     end
 
     def detail_url
-      host = ENV.fetch("APP_HOST", "http://localhost:3000")
+      opts = PublicAppHost.url_options
       if invitation.scheduled? && invitation.game_id.present?
-        Rails.application.routes.url_helpers.game_url(invitation.game, host: host)
+        Rails.application.routes.url_helpers.game_url(invitation.game, **opts)
       else
-        Rails.application.routes.url_helpers.invitation_url(invitation, host: host)
+        Rails.application.routes.url_helpers.invitation_url(invitation, **opts)
       end
     end
   end

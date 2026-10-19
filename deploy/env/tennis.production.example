@@ -1,0 +1,43 @@
+﻿# Copy on the A1 host to: /path/to/getcourt/.env.production.tennis
+# chmod 600 .env.production.tennis — never commit real secrets.
+
+RAILS_ENV=production
+SECRET_KEY_BASE=
+
+# APP_HOST must be a full URL with scheme (https://...).
+# Action Mailer strips the scheme for default_url_options; PublicAppHost does the
+# same for notification link builders. Do not use a bare hostname alone.
+APP_HOST=https://getcourt.zanity.net
+# Bare hostname(s) only — comma-separated — for Rails config.hosts
+RAILS_ALLOWED_HOSTS=getcourt.zanity.net
+
+# Nginx on the host proxies from 127.0.0.1 — loopback trust is enough by default.
+# TRUSTED_PROXIES=
+TRUST_PRIVATE_NETWORK_PROXIES=0
+
+# Isolated Compose project tennis (set also: export COMPOSE_PROJECT_NAME=tennis)
+DATABASE_USERNAME=tennis
+DATABASE_PASSWORD=
+DATABASE_NAME=tennis_production
+DATABASE_CACHE_NAME=tennis_production_cache
+DATABASE_QUEUE_NAME=tennis_production_queue
+DATABASE_CABLE_NAME=tennis_production_cable
+
+# Compose maps "${WEB_PORT}:3000". Use host:port so Rails is NOT public on 0.0.0.0.
+# Wrong: WEB_PORT=3010  → publishes *:3010
+# Right: WEB_PORT=127.0.0.1:3010
+WEB_PORT=127.0.0.1:3010
+
+# Conservative concurrency (host has headroom; start low)
+WEB_CONCURRENCY=1
+RAILS_MAX_THREADS=3
+SOLID_QUEUE_IN_PUMA=
+
+SMTP_ADDRESS=smtp.resend.com
+SMTP_PORT=2587
+SMTP_USERNAME=resend
+SMTP_PASSWORD=
+SMTP_AUTHENTICATION=plain
+SMTP_ENABLE_STARTTLS=true
+
+RAILS_LOG_LEVEL=info

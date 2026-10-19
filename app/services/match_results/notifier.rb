@@ -79,8 +79,7 @@ module MatchResults
     end
 
     def detail_url
-      host = ENV.fetch("APP_HOST", "http://localhost:3000")
-      Rails.application.routes.url_helpers.game_url(@game, host: host)
+      Rails.application.routes.url_helpers.game_url(@game, **PublicAppHost.url_options)
     end
   end
 end
